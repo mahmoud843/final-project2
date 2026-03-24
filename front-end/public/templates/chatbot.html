@@ -1,0 +1,108 @@
+<!-- ================= بداية كود الـ Chatbot ================= -->
+{% if session.username %}
+
+    {% set endpoint = request.endpoint or '' %}
+
+    {% if 'home' in endpoint or 'index' in endpoint %}
+        {% set bot_name = 'رومان رينز' %}
+        {% set bot_img = 'images/ai-home.png' %}
+        {% set bot_fallback = 'https://ui-avatars.com/api/?name=Roman+Reigns&background=dc2626&color=fff&size=128&bold=true' %}
+        {% set bot_color = '#dc2626' %}
+        {% set greeting = 'اعترف بي كزعيم! أنا هنا لأرشدك في مجتمع المطورين.' %}
+        {% set guide_title = 'مرشد الصفحة الرئيسية' %}
+        {% set guide_hint = 'اضغط عليّ لو عايز مساعدة سريعة في البوستات والتنقل داخل الموقع.' %}
+        {% set bot_page = 'home' %}
+    {% elif 'codelab' in endpoint %}
+        {% set bot_name = 'هوملاندر' %}
+        {% set bot_img = 'images/ai-codelab.png' %}
+        {% set bot_fallback = 'https://ui-avatars.com/api/?name=Home+Lander&background=1d4ed8&color=fff&size=128&bold=true' %}
+        {% set bot_color = '#1d4ed8' %}
+        {% set greeting = 'أنا مرشد Code Lab. أقدر أساعدك في فهم التحدي، تحسين الكود، وشرح الأخطاء خطوة بخطوة.' %}
+        {% set guide_title = 'مرشد Code Lab' %}
+        {% set guide_hint = 'اضغط هنا لو تريد شرح التحدي الحالي أو مساعدة سريعة قبل تشغيل الكود.' %}
+        {% set bot_page = 'codelab' %}
+    {% elif 'profile' in endpoint %}
+        {% set bot_name = 'المحلل الذكي' %}
+        {% set bot_img = 'images/ai-profile.png' %}
+        {% set bot_fallback = 'https://ui-avatars.com/api/?name=Smart+Analyst&background=4338ca&color=fff&size=128&bold=true' %}
+        {% set bot_color = '#4338ca' %}
+        {% set greeting = 'دعني أحلل إحصائياتك بعبقرية. كيف يمكنني تحسين بروفايلك؟' %}
+        {% set guide_title = 'مرشد البروفايل' %}
+        {% set guide_hint = 'موجود هنا لمساعدتك في فهم حسابك وتنسيق صفحتك بسهولة.' %}
+        {% set bot_page = 'profile' %}
+    {% elif 'shop' in endpoint %}
+        {% set bot_name = 'بابا نويل' %}
+        {% set bot_img = 'images/ai-shop.png' %}
+        {% set bot_fallback = 'https://ui-avatars.com/api/?name=Santa+Claus&background=16a34a&color=fff&size=128&bold=true' %}
+        {% set bot_color = '#16a34a' %}
+        {% set greeting = 'هو هو هو! هل تبحث عن كتب ومصادر رائعة لتطوير مهاراتك؟' %}
+        {% set guide_title = 'مرشد المتجر' %}
+        {% set guide_hint = 'اسألني عن الكتب، المنتجات، أو أفضل شيء تبدأ به.' %}
+        {% set bot_page = 'shop' %}
+    {% elif 'hosting' in endpoint %}
+        {% set bot_name = 'المهندس التقني' %}
+        {% set bot_img = 'images/ai-hosting.png' %}
+        {% set bot_fallback = 'https://ui-avatars.com/api/?name=Tech+Engineer&background=eab308&color=000&size=128&bold=true' %}
+        {% set bot_color = '#eab308' %}
+        {% set greeting = 'أهلاً بك في قسم الخوادم. كيف أساعدك في إعداد موقعك اليوم؟' %}
+        {% set guide_title = 'مرشد الاستضافة' %}
+        {% set guide_hint = 'أرشدك إلى الخطوات الأساسية بسرعة ومن غير لخبطة.' %}
+        {% set bot_page = 'hosting' %}
+    {% else %}
+        {% set bot_name = 'PAD AI' %}
+        {% set bot_img = 'images/ai-default.png' %}
+        {% set bot_fallback = 'https://ui-avatars.com/api/?name=PAD+AI&background=a855f7&color=fff&size=128&bold=true' %}
+        {% set bot_color = '#a855f7' %}
+        {% set greeting = 'أنا العقل المدبر للمنصة. اسألني أي سؤال وسأجيبك.' %}
+        {% set guide_title = 'مرشد PAD' %}
+        {% set guide_hint = 'اضغط عليّ في أي صفحة لو عايز إرشاد سريع.' %}
+        {% set bot_page = 'default' %}
+    {% endif %}
+
+    <div id="ai-chat-data"
+         data-color="{{ bot_color }}"
+         data-name="{{ bot_name }}"
+         data-page="{{ bot_page }}"
+         style="display:none;">
+    </div>
+
+    <div class="safe-chatbot-wrapper page-{{ bot_page }}" id="safeChatbotWrapper">
+        <div class="safe-chat-launcher" id="openSafeChat" title="{{ guide_title }}" aria-label="{{ guide_title }}" tabindex="0">
+            <div class="safe-chat-btn">
+                <img src="{{ url_for('static', filename=bot_img) }}" alt="Bot" onerror="this.onerror=null;this.src='{{ bot_fallback }}';">
+            </div>
+            <div class="safe-guide-card">
+                <span class="safe-guide-badge">مرشد</span>
+                <strong>{{ guide_title }}</strong>
+                <p>{{ guide_hint }}</p>
+            </div>
+        </div>
+
+        <div class="safe-chat-box" id="safeChatBox">
+            <div class="safe-chat-header" id="safeChatHeader">
+                <div style="display: flex; align-items: center;">
+                    <img src="{{ url_for('static', filename=bot_img) }}" class="safe-header-img" alt="Bot" onerror="this.onerror=null;this.src='{{ bot_fallback }}';">
+                    <div class="safe-header-copy">
+                        <span id="botNameDisplay"></span>
+                        <small>مرشد سريع داخل الموقع</small>
+                    </div>
+                </div>
+                <div class="safe-close-btn" id="closeSafeChat">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+
+            <div class="safe-chat-body" id="safeChatBody">
+                <div class="safe-bubble safe-msg-bot">
+                    مرحباً بك يا <strong>{{ session.username }}</strong>!<br>{{ greeting }}
+                </div>
+            </div>
+
+            <div class="safe-chat-footer">
+                <input type="text" id="safeUserInput" class="safe-input" placeholder="اكتب رسالتك...">
+                <button class="safe-send" id="safeSendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+{% endif %}
+<!-- ================= نهاية كود الـ Chatbot ================= -->

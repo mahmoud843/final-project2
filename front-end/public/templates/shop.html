@@ -1,208 +1,354 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Store Pro | تسوق كتب البرمجة</title>
-  <!-- سيبنا url_for للـ CSS بس عشان الستايل ميضربش -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <style>
-      .back-to-home {
-          text-decoration: none;
-          color: rgba(59,130,246,.95);
-          font-weight: bold;
-          margin-right: 20px;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-      }
-      .back-to-home:hover {
-          text-decoration: underline;
-      }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAD Store | Developer Resources</title>
+    
+    <!-- ربط Font Awesome و Bootstrap 5 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        /* =======================================
+           تنسيقات المتجر المستقل (Premium Dark Theme)
+           ======================================= */
+        body { 
+            background-color: #070b17; 
+            color: #eaf0ff; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-image: radial-gradient(circle at top center, rgba(27, 116, 228, 0.08), transparent 60%);
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        /* زر الرجوع العائم */
+        .btn-floating-back {
+            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            background: rgba(15, 25, 51, 0.8); border: 1px solid rgba(145, 175, 255, 0.15);
+            color: #a3b8cc; padding: 10px 20px; border-radius: 50px;
+            font-weight: 800; font-size: 14px; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 10px;
+            backdrop-filter: blur(10px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: all 0.3s ease;
+        }
+        .btn-floating-back:hover { background: #1b74e4; color: #fff; transform: translateX(-5px); border-color: #1b74e4; }
+
+        /* منطقة المتجر الأساسية */
+        .shop-container { max-width: 1300px; margin: 80px auto 0; padding: 0 20px; }
+
+        /* بانر المتجر */
+        .shop-hero {
+            background: linear-gradient(135deg, rgba(15, 25, 51, 0.8), rgba(27, 116, 228, 0.15));
+            border: 1px solid rgba(145, 175, 255, 0.1); border-radius: 24px;
+            padding: 50px; margin-bottom: 40px; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px);
+        }
+        .hero-title { font-size: 42px; font-weight: 900; margin-bottom: 15px; letter-spacing: -1px;}
+        .hero-title span { color: #6ce5ff; }
+
+        /* الفلاتر والبحث */
+        .filters-bar {
+            display: flex; gap: 15px; margin-bottom: 30px; align-items: center; flex-wrap: wrap;
+            background: rgba(255,255,255,0.02); padding: 20px; border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .search-input {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; border-radius: 12px; padding: 12px 20px; width: 100%; max-width: 350px;
+            transition: 0.3s;
+        }
+        .search-input:focus { outline: none; border-color: #1b74e4; box-shadow: 0 0 10px rgba(27,116,228,0.2);}
+        
+        .filter-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05); color: #a3b8cc;
+            padding: 10px 25px; border-radius: 50px; cursor: pointer; transition: 0.3s; font-weight: 600;
+        }
+        .filter-btn:hover, .filter-btn.active { background: #1b74e4; color: #fff; border-color: #1b74e4; box-shadow: 0 5px 15px rgba(27,116,228,0.3);}
+
+        /* كروت المنتجات الاحترافية */
+        .product-card {
+            background: rgba(15, 25, 51, 0.5); border: 1px solid rgba(145, 175, 255, 0.08);
+            border-radius: 20px; overflow: hidden; transition: all 0.3s ease; height: 100%;
+            display: flex; flex-direction: column;
+        }
+        .product-card:hover { transform: translateY(-8px); border-color: rgba(27, 116, 228, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        
+        .product-img-wrap { height: 220px; position: relative; background: #0b132a; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+        /* Placeholder for images you will add later */
+        .product-placeholder { font-size: 60px; opacity: 0.5; transition: 0.3s; }
+        .product-card:hover .product-placeholder { transform: scale(1.1); opacity: 1; }
+        
+        .badge-category { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 15px; border-radius: 8px; font-size: 12px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px);}
+        
+        .product-info { padding: 25px; display: flex; flex-direction: column; flex-grow: 1; }
+        .product-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+        .product-desc { font-size: 14px; color: #a3b8cc; margin-bottom: 25px; line-height: 1.6; flex-grow: 1;}
+        
+        .price-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;}
+        .product-price { font-size: 24px; font-weight: 900; color: #fbbf24; }
+        
+        .add-cart-btn { background: linear-gradient(135deg, #1b74e4, #0b53b3); color: #fff; border: none; padding: 10px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px;}
+        .add-cart-btn:hover { background: linear-gradient(135deg, #2684ff, #1262d1); box-shadow: 0 8px 20px rgba(27,116,228,0.3); transform: translateY(-2px);}
+
+        /* زر السلة العائم */
+        .cart-floating-btn {
+            position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px;
+            background: linear-gradient(135deg, #fbbf24, #d97706); color: #000; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 26px;
+            cursor: pointer; box-shadow: 0 10px 30px rgba(251, 191, 36, 0.5); z-index: 1000;
+            transition: 0.3s; border: none;
+        }
+        .cart-floating-btn:hover { transform: scale(1.1) rotate(-5deg); }
+        .cart-badge {
+            position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff; font-size: 14px;
+            font-weight: bold; width: 28px; height: 28px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; border: 3px solid #070b17;
+        }
+
+        /* سلة المشتريات (Offcanvas) */
+        .offcanvas-cart { background-color: #0f1933; color: #fff; border-left: 1px solid rgba(255,255,255,0.1); width: 400px !important;}
+        .cart-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05);}
+        .cart-item-title { font-size: 15px; font-weight: bold; margin-bottom: 5px; color: #fff;}
+        .cart-item-price { color: #fbbf24; font-weight: 800;}
+        .qty-controls button { background: rgba(255,255,255,0.1); border: none; color: #fff; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; transition: 0.2s;}
+        .qty-controls button:hover { background: #1b74e4;}
+        
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="topbar">
-      <div class="brand" style="display: flex; align-items: center;">
-        <div class="logo" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M4.8 5.5c0-1 .8-1.8 1.8-1.8h4.9c1.4 0 2.6.6 3.3 1.5.7-.9 1.9-1.5 3.3-1.5h.6c1 0 1.8.8 1.8 1.8v14.9c0 .8-.7 1.3-1.5 1.1-1.5-.4-3-.7-4.2-.7-1.6 0-3 .4-4 .9-.4.2-.9.2-1.3 0-1-.5-2.4-.9-4-.9-1.2 0-2.7.3-4.2.7-.8.2-1.5-.3-1.5-1.1V5.5Z"
-                  stroke="rgba(59,130,246,.95)" stroke-width="1.6"/>
-          </svg>
-        </div>
-        <b>Book Store Pro</b>
-        <a href="{{ url_for('home_page') }}" class="back-to-home">
-           &larr; العودة للرئيسية
-        </a>
-      </div>
-      
-      <nav class="midnav">
-        <span>الكتب</span>
-        <span class="sep">|</span>
-        <span>Admin</span>
-      </nav>
-      <div class="cartBtn">
-        <div class="cartIcon" title="سلة التسوق">
-          <div class="badge" id="cartCount">0</div>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M7 7h14l-2 8H8L7 7Zm0 0-1-3H3" stroke="rgba(229,231,235,.95)" stroke-width="1.6" stroke-linecap="round"/>
-            <path d="M9.5 20a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4ZM17.5 20a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z" fill="rgba(229,231,235,.95)"/>
-          </svg>
-        </div>
-      </div>
-    </header>
+
+<!-- زر الرجوع للرئيسية -->
+<a href="{{ url_for('home_page') }}" class="btn-floating-back">
+    <i class="fa-solid fa-arrow-left"></i>
+    <span>Back to PAD</span>
+</a>
+
+<div class="shop-container">
     
-    <div class="grid">
-      <main>
-        <section class="banner">
-          <div class="bannerInner">
-            <div class="heroText">
-              <h1>تسوق كتب البرمجة</h1>
-              <p>Python, CSS, JavaScript, HTML, أفضل الكتب اتعلمها</p>
-              <div class="heroActions">
-                <button class="btn primary" id="searchNowBtn">ابدأ الآن</button>
-              </div>
-            </div>
-            <div class="heroArt">
-              <!-- استخدام المسار المباشر لصورة البانر -->
-              <img src="../static/images/banner_hd.png" alt="Hero Banner" class="heroImg">
-            </div>
-          </div>
-        </section>
+    <!-- البانر الاحترافي -->
+    <div class="shop-hero">
+        <div>
+            <h1 class="hero-title">PAD <span>Store</span></h1>
+                      <!-- شيلنا text-muted وحطينا لون مخصص (رمادي فاتح جداً) عشان ينور على الخلفية -->
+<p class="fs-5 mb-0" style="max-width: 600px; color: #eaf0ff; opacity: 0.9; line-height: 1.6;">
+    Discover our premium collection of visual books and programming resources. Upgrade your coding journey today.
+</p>
 
-        <section class="products" id="productsGrid">
-          
-          <!-- كتاب 1: بايثون -->
-          <div class="card" data-category="python" data-name="تعلم Python للمبتدئين" data-price="120" data-id="1">
-            <div class="cover">
-                <!-- استخدام المسار المباشر -->
-                <img src="../static/images/python.png" alt="تعلم Python للمبتدئين" style="width:100%; height:100%; border-radius:16px; object-fit: cover;">
-            </div>
-            <div class="meta" style="margin-top: 10px;">
-              <div class="price" style="font-weight: bold; color: #fbbf24;">120 جنيه</div>
-              <button class="addBtn" onclick="addToCart(this)">أضف للسلة</button>
-            </div>
-          </div>
-
-          <!-- كتاب 2: CSS -->
-          <div class="card" data-category="css" data-name="CSS من الصفر للاحتراف" data-price="80" data-id="2">
-            <div class="cover">
-                <!-- استخدام المسار المباشر -->
-                <img src="../static/images/css.png" alt="CSS من الصفر للاحتراف" style="width:100%; height:100%; border-radius:16px; object-fit: cover;">
-            </div>
-            <div class="meta" style="margin-top: 10px;">
-              <div class="price" style="font-weight: bold; color: #fbbf24;">80 جنيه</div>
-              <button class="addBtn" onclick="addToCart(this)">أضف للسلة</button>
-            </div>
-          </div>
-
-          <!-- كتاب 3: JavaScript -->
-          <div class="card" data-category="javascript" data-name="JavaScript كامل" data-price="150" data-id="3">
-            <div class="cover">
-                <!-- استخدام المسار المباشر -->
-                <img src="../static/images/js.png" alt="JavaScript كامل" style="width:100%; height:100%; border-radius:16px; object-fit: cover;">
-            </div>
-            <div class="meta" style="margin-top: 10px;">
-              <div class="price" style="font-weight: bold; color: #fbbf24;">150 جنيه</div>
-              <button class="addBtn" onclick="addToCart(this)">أضف للسلة</button>
-            </div>
-          </div>
-
-          <!-- كتاب 4: HTML -->
-          <div class="card" data-category="html" data-name="HTML & Web Design" data-price="70" data-id="4">
-            <div class="cover">
-                <!-- استخدام المسار المباشر -->
-                <img src="../static/images/HTML5.png" alt="HTML & Web Design" style="width:100%; height:100%; border-radius:16px; object-fit: cover;">
-            </div>
-            <div class="meta" style="margin-top: 10px;">
-              <div class="price" style="font-weight: bold; color: #fbbf24;">70 جنيه</div>
-              <button class="addBtn" onclick="addToCart(this)">أضف للسلة</button>
-            </div>
-          </div>
-
-        </section>
-      </main>
-      
-      <aside class="cart" id="cartPanel">
-        <div class="cartHead">
-          <h3>سلة التسوق</h3>
         </div>
-        <div class="cartList" id="cartList">
-          <!-- عناصر السلة -->
+        <div class="d-none d-md-block text-center px-4">
+            <i class="fa-solid fa-bag-shopping" style="font-size: 90px; color: rgba(255,255,255,0.05);"></i>
         </div>
-        <div class="sum">
-          <span>الإجمالي:</span>
-          <span id="totalPrice">0</span>
+    </div>
+
+    <!-- الفلاتر -->
+    <div class="filters-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search for books...">
+        <div class="d-flex gap-2">
+            <button class="filter-btn active" data-filter="all">All Books</button>
+            <button class="filter-btn" data-filter="frontend">Front-End</button>
+            <button class="filter-btn" data-filter="backend">Back-End</button>
         </div>
-        <div class="coupon">
-          <div class="couponTop">كود الخصم</div>
-          <div class="couponRow">
-            <input type="text" id="couponInput" placeholder="أدخل كود الخصم">
-            <button id="applyCouponBtn">تطبيق</button>
-          </div>
+    </div>
+
+    <!-- شبكة المنتجات (الـ 4 كتب اللي طلبتهم) -->
+    <div class="row g-4" id="productsGrid">
+        <!-- سيتم توليد المنتجات هنا بواسطة JavaScript -->
+    </div>
+
+</div>
+
+<!-- زر السلة العائم -->
+<button class="cart-floating-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+    <i class="fa-solid fa-cart-shopping"></i>
+    <span class="cart-badge" id="cartCount">0</span>
+</button>
+
+<!-- سلة المشتريات الجانبية -->
+<div class="offcanvas offcanvas-end offcanvas-cart" tabindex="-1" id="cartOffcanvas">
+  <div class="offcanvas-header border-bottom border-secondary border-opacity-25 pb-3 mt-2 px-4">
+    <h4 class="offcanvas-title fw-bold"><i class="fa-solid fa-cart-shopping text-warning me-2"></i> Your Cart</h4>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column px-4">
+    
+    <div id="cartList" class="flex-grow-1 overflow-auto pe-2 mt-3">
+        <!-- عناصر السلة -->
+    </div>
+
+    <div class="mt-auto pt-4 border-top border-secondary border-opacity-25">
+        <div class="d-flex justify-content-between mb-4">
+            <span class="text-muted fw-bold fs-5">Total Amount:</span>
+            <span class="fw-bold text-warning fs-4" id="totalPrice">0 EGP</span>
         </div>
-      </aside>
+        <button class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-lg fs-5" style="background: linear-gradient(135deg, #1b74e4, #0b53b3); border:none;" onclick="checkout()">
+            Checkout Securely <i class="fa-solid fa-lock ms-2"></i>
+        </button>
     </div>
   </div>
-  
-  <script>
+</div>
+
+<!-- التنبيهات -->
+<div class="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // قاعدة بيانات الكتب الـ 4 الأساسية (بأيقونات تعبر عنها بدل الصور مؤقتاً)
+    const products = [
+        { id: 1, name: "HTML5 Visual Guide", category: "frontend", price: 80, desc: "Learn the structure of the web. Perfect for absolute beginners.", icon: "fa-html5", color: "#e34f26" },
+        { id: 2, name: "CSS3 Mastery Book", category: "frontend", price: 120, desc: "Master styling, Flexbox, and Grid to build beautiful responsive websites.", icon: "fa-css3-alt", color: "#1572b6" },
+        { id: 3, name: "JavaScript Deep Dive", category: "frontend", price: 150, desc: "Understand JS mechanics, DOM manipulation, and ES6+ features.", icon: "fa-js", color: "#f7df1e" },
+        { id: 4, name: "Python for Backend", category: "backend", price: 200, desc: "Learn Python programming, logic, and how to build strong backend systems.", icon: "fa-python", color: "#3776ab" }
+    ];
+
     let cart = [];
-    const cartList = document.getElementById('cartList');
-    const cartCount = document.getElementById('cartCount');
-    const totalPriceEl = document.getElementById('totalPrice');
+    const productsGrid = document.getElementById('productsGrid');
 
-    function addToCart(btnElement){
-      const card = btnElement.closest('.card');
-      const id = parseInt(card.getAttribute('data-id'));
-      const name = card.getAttribute('data-name');
-      const price = parseInt(card.getAttribute('data-price'));
-
-      const exist = cart.find(c => c.id === id);
-      
-      if(exist) {
-          exist.qty++;
-      } else {
-          cart.push({id: id, name: name, price: price, qty: 1});
-      }
-      updateCart();
-    }
-
-    function updateCart(){
-      cartList.innerHTML='';
-      let total = 0;
-      
-      cart.forEach((c, i) => {
-        total += c.price * c.qty;
-        const div = document.createElement('div');
-        div.className = "cartItem";
-        div.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(17,24,39,.55); padding: 8px; border-radius: 10px;";
+    // دالة رسم المنتجات
+    function renderProducts(filter = "all", searchQuery = "") {
+        productsGrid.innerHTML = '';
+        let filtered = products;
         
-        div.innerHTML = `
-          <div class="cartLeft" style="display: flex; gap: 10px; align-items: center;">
-            <div class="cartTxt">
-              <div class="t" style="font-size: 14px;">${c.name}</div>
-              <div class="p" style="color: var(--gold); font-weight: bold; font-size: 12px;">${c.price} جنيه</div>
-            </div>
-          </div>
-          <div class="cartControls" style="display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 8px;">
-            <button onclick="changeQty(${i},-1)" style="background: transparent; border: none; color: white; cursor: pointer; font-size: 16px;">-</button>
-            <div class="qty" style="font-weight: bold;">${c.qty}</div>
-            <button onclick="changeQty(${i},1)" style="background: transparent; border: none; color: white; cursor: pointer; font-size: 16px;">+</button>
-          </div>
-        `;
-        cartList.appendChild(div);
-      });
-      
-      cartCount.innerText = cart.reduce((sum, item) => sum + item.qty, 0);
-      totalPriceEl.innerText = total + " جنيه";
+        if (filter !== "all") filtered = filtered.filter(p => p.category === filter);
+        if (searchQuery) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery));
+
+        if (filtered.length === 0) {
+            productsGrid.innerHTML = `<div class="col-12 text-center text-muted mt-5"><h5>No books found matching your search.</h5></div>`;
+            return;
+        }
+
+        filtered.forEach(p => {
+            const card = document.createElement('div');
+            card.className = "col-md-6 col-lg-3"; // 4 كروت في الصف
+            card.innerHTML = `
+                <div class="product-card">
+                    <div class="product-img-wrap">
+                        <span class="badge-category">${p.category.toUpperCase()}</span>
+                        <!-- مساحة مخصصة للصورة لاحقاً، حالياً تعرض أيقونة اللغة -->
+                        <i class="fa-brands ${p.icon} product-placeholder" style="color: ${p.color};"></i>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-title">${p.name}</div>
+                        <div class="product-desc">${p.desc}</div>
+                        <div class="price-row">
+                            <span class="product-price">${p.price} <span style="font-size:14px; color:#a3b8cc;">EGP</span></span>
+                            <button class="add-cart-btn" onclick="addToCart(${p.id})">
+                                <i class="fa-solid fa-cart-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            productsGrid.appendChild(card);
+        });
     }
 
-    function changeQty(i, delta){
-      cart[i].qty += delta;
-      if(cart[i].qty <= 0) cart.splice(i,1);
-      updateCart();
+    // دوال السلة
+    function addToCart(id) {
+        const item = products.find(p => p.id === id);
+        const exist = cart.find(c => c.id === id);
+        if(exist) exist.qty++;
+        else cart.push({...item, qty: 1});
+        updateCart();
+        showToast(`<strong>${item.name}</strong> added to cart!`);
     }
-  </script>
+
+    function updateCart() {
+        const cartList = document.getElementById('cartList');
+        const cartCount = document.getElementById('cartCount');
+        const totalPriceEl = document.getElementById('totalPrice');
+        
+        cartList.innerHTML = '';
+        let total = 0; let count = 0;
+
+        if (cart.length === 0) {
+            cartList.innerHTML = `<div class="text-center text-muted mt-5"><i class="fa-solid fa-basket-shopping fs-1 mb-3 opacity-25"></i><p>Your cart is empty.</p></div>`;
+        }
+
+        cart.forEach((c, i) => {
+            total += c.price * c.qty;
+            count += c.qty;
+            cartList.innerHTML += `
+                <div class="cart-item">
+                    <div>
+                        <div class="cart-item-title">${c.name}</div>
+                        <div class="cart-item-price">${c.price * c.qty} EGP</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 qty-controls">
+                        <button onclick="changeQty(${i}, -1)"><i class="fa-solid fa-minus" style="font-size:10px;"></i></button>
+                        <span class="fw-bold px-1">${c.qty}</span>
+                        <button onclick="changeQty(${i}, 1)"><i class="fa-solid fa-plus" style="font-size:10px;"></i></button>
+                    </div>
+                </div>
+            `;
+        });
+
+        cartCount.innerText = count;
+        totalPriceEl.innerText = total + " EGP";
+    }
+
+    function changeQty(index, delta) {
+        cart[index].qty += delta;
+        if(cart[index].qty <= 0) cart.splice(index, 1);
+        updateCart();
+    }
+
+      // عملية الدفع (مربوطة بـ Flask API)
+    async function checkout() {
+        if(cart.length === 0) return showToast("Your cart is empty!", "error");
+        
+        // حساب المجموع الكلي
+        let totalAmount = 0;
+        cart.forEach(item => { totalAmount += (item.price * item.qty); });
+
+        const checkoutBtn = document.querySelector('button[onclick="checkout()"]');
+        const originalText = checkoutBtn.innerHTML;
+        checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        checkoutBtn.disabled = true;
+
+        try {
+            const response = await fetch("{{ url_for('checkout') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cart: cart,
+                    total: totalAmount
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                showToast(result.message, "success");
+                cart = []; // تفريغ السلة بعد نجاح الشراء
+                updateCart();
+                // إغلاق السلة
+                bootstrap.Offcanvas.getInstance(document.getElementById('cartOffcanvas')).hide();
+            } else {
+                showToast("Error: " + result.message, "error");
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast("Connection error occurred.", "error");
+        } finally {
+            checkoutBtn.innerHTML = originalText;
+            checkoutBtn.disabled = false;
+        }
+    }
+
+
+    // نظام التنبيهات
+    function showToast(message, type="success") {
+        const icon = type === 'success' ? 'fa-check-circle text-success' : 'fa-circle-exclamation text-danger';
+        const toastHTML = `<div class="toast align-items-center text-bg-dark border border-secondary border-opacity-25 show mb-2 shadow-lg" role="alert"><div class="d-flex"><div class="toast-body"><i class="fa-solid ${icon} me-2"></i> ${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+        const container = document.querySelector('.toast-container');
+        container.innerHTML += toastHTML;
+        setTimeout(() => { if(container.firstChild) container.removeChild(container.firstChild); }, 3000);
+    }
+
+    renderProducts();
+</script>
+
+
 </body>
 </html>

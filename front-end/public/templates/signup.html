@@ -7,16 +7,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='signup.css') }}">
 </head>
 <body>
-    
+
     <div class="form-container">
         <form id="registrationForm" method="POST" action="{{ url_for('signup_page') }}">
             <h2>Create Account</h2>
-            
-            <!-- رسائل Flask -->
+
             {% if message %}
                 <div class="message">{{ message }}</div>
             {% endif %}
-            
+
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
@@ -24,25 +23,27 @@
                     {% endfor %}
                 {% endif %}
             {% endwith %}
-            
+
             <div>
                 <label for="regUsername">Username</label>
                 <input type="text" id="regUsername" name="username" required placeholder="Choose a username">
             </div>
+
             <div>
                 <label for="regEmail">Email Address</label>
                 <input type="email" id="regEmail" name="email" required placeholder="name@domain.com">
             </div>
+
             <div>
                 <label for="regPassword">Password</label>
                 <input type="password" id="regPassword" name="password" required minlength="6" placeholder="At least 6 characters">
             </div>
+
             <div>
                 <label for="regConfirmPassword">Confirm Password</label>
                 <input type="password" id="regConfirmPassword" name="confirm_password" required placeholder="Repeat password">
             </div>
-            
-            <!-- تنسيق قسم الخيارات -->
+
             <div class="row">
                 <div class="column-1">
                     <p class="gender">Gender</p>
@@ -55,6 +56,7 @@
                         <label for="female">Female</label>
                     </div>
                 </div>
+
                 <div class="column-2">
                     <p>Programming Level</p>
                     <div class="beginner">
@@ -69,13 +71,13 @@
             </div>
 
             <button type="submit">Sign Up</button>
-        
+
             <div class="login-message">
-                <p>Already have an account? <a href="{{ url_for('login_page') }}" id="login">Log In</a></p>  
+                <p>Already have an account? <a href="{{ url_for('login_page') }}" id="login">Log In</a></p>
             </div>
         </form>
     </div>
-    
+
     <script src="{{ url_for('static', filename='signup.js') }}"></script>
 </body>
 </html>
