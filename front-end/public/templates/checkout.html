@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | PAD Store</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #070b17;
+            color: #eaf0ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .checkout-box {
+            max-width: 700px;
+            margin: 40px auto;
+            background: rgba(15, 25, 51, 0.9);
+            border: 1px solid rgba(145, 175, 255, 0.12);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        }
+
+        .checkout-title {
+            font-size: 34px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .checkout-subtitle {
+            color: #a3b8cc;
+            margin-bottom: 30px;
+        }
+
+        .payment-option {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin-bottom: 15px;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .payment-option:hover {
+            border-color: #1b74e4;
+            transform: translateY(-2px);
+        }
+
+        .payment-option input {
+            margin-right: 10px;
+        }
+
+        .confirm-btn {
+            width: 100%;
+            margin-top: 20px;
+            background: linear-gradient(135deg, #3bb2f6, #1b74e4);
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 14px;
+            border-radius: 14px;
+            transition: 0.3s;
+        }
+
+        .confirm-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .back-link {
+            color: #a3b8cc;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .back-link:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="checkout-box">
+        <a href="{{ url_for('shop_page') }}" class="back-link">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Back to Shop</span>
+        </a>
+
+        <div class="checkout-title">Choose Payment Method</div>
+        <div class="checkout-subtitle">Select your preferred payment option to complete your order.</div>
+
+        <form method="POST">
+            <input type="hidden" name="book_name" id="book_name">
+<input type="hidden" name="price" id="price">
+            <label class="payment-option d-block">
+                <input type="radio" name="payment" value="cash">
+                <i class="fa-solid fa-money-bill-wave me-2"></i>
+                Cash on Delivery
+            </label>
+
+            <label class="payment-option d-block">
+                <input type="radio" name="payment" value="card">
+                <i class="fa-regular fa-credit-card me-2"></i>
+                Credit Card
+            </label>
+<div id="cardFields" style="display:none; margin-top:10px;">
+    <input type="text" name="card_number" class="form-control mb-2" placeholder="Card Number">
+    <input type="text" name="card_holder" class="form-control mb-2" placeholder="Card Holder Name">
+<input type="text" name="expiry_date" class="form-control mb-2" placeholder="Expiry Date">
+<input type="text" name="cvv" class="form-control mb-2" placeholder="CVV">
+</div>
+            <label class="payment-option d-block">
+                <input type="radio" name="payment" value="vodafone">
+                <i class="fa-solid fa-mobile-screen-button me-2"></i>
+                Vodafone Cash
+            </label>
+<div id="vodafoneField" style="display:none; margin-top:10px;">
+    <input type="text" name="vodafone_number" class="form-control" placeholder="Vodafone Number">
+</div>
+            <button type="button" class="confirm-btn" onclick="confirmOrder()">
+                Confirm Order
+            </button>
+        </form>
+    </div>
+<script>
+const radios = document.querySelectorAll('input[name="payment"]');
+const cardFields = document.getElementById('cardFields');
+const vodafoneField = document.getElementById('vodafoneField');
+
+radios.forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.value === 'card') {
+            cardFields.style.display = 'block';
+            vodafoneField.style.display = 'none';
+        } else if (radio.value === 'vodafone') {
+            vodafoneField.style.display = 'block';
+            cardFields.style.display = 'none';
+        } else {
+            cardFields.style.display = 'none';
+            vodafoneField.style.display = 'none';
+        }
+    });
+});
+// ناخد البيانات من الرابط
+const params = new URLSearchParams(window.location.search);
+
+const bookName = params.get("book_name");
+const price = params.get("price");
+
+// نحطهم في الفورم
+if (bookName && price) {
+    document.getElementById("book_name").value = bookName;
+    document.getElementById("price").value = price;
+}
+function confirmOrder() {
+    let purchased = JSON.parse(localStorage.getItem("purchasedBooks")) || [];
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    cart.forEach(item => {
+        purchased.push({
+            name: item.name,
+            price: item.price,
+            date: new Date().toLocaleDateString()
+        });
+    });
+
+    localStorage.setItem("purchasedBooks", JSON.stringify(purchased));
+    localStorage.removeItem("cart");
+
+    window.location.href = "/profile";
+}
+</script>
+</body>
+</html>
