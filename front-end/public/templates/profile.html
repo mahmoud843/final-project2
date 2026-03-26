@@ -233,7 +233,7 @@
             padding-bottom: 15px;
         }
 
-        .project-card, .order-card, .todo-card, .rank-card, .info-card {
+        .project-card, .order-card, .hosting-card, .todo-card, .rank-card, .info-card {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 16px;
@@ -244,6 +244,7 @@
 
         .project-card:hover,
         .order-card:hover,
+        .hosting-card:hover,
         .todo-card:hover,
         .rank-card:hover,
         .info-card:hover {
@@ -260,6 +261,7 @@
 
         .project-info h6,
         .order-card h6,
+        .hosting-card h6,
         .todo-card h6,
         .info-card h6 {
             color: #fff;
@@ -470,6 +472,16 @@
             object-fit: cover;
         }
 
+        .status-active {
+            color: #22c55e;
+        }
+        .status-cancelled {
+            color: #ef4444;
+        }
+        .status-expired {
+            color: #eab308;
+        }
+
         @media (max-width: 991px) {
             .overview-grid {
                 grid-template-columns: 1fr;
@@ -658,6 +670,12 @@
                         </li>
 
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#hosting-tab" type="button">
+                                <i class="fa-solid fa-server"></i> Hosting
+                            </button>
+                        </li>
+
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#todos-tab" type="button">
                                 Todos
                             </button>
@@ -799,6 +817,23 @@
                             {% else %}
                                 <p class="muted-text">No orders yet.</p>
                             {% endif %}
+                        </div>
+
+                        <div class="tab-pane fade" id="hosting-tab">
+                            <h5 class="border-0 pb-0 mb-4">
+                                <i class="fa-solid fa-server text-info me-2"></i>
+                                My Hosting Plans
+                            </h5>
+                            <div id="hosting-orders-list">
+                                <div class="text-center py-4">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Loading...
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <a href="{{ url_for('hosting_page') }}" class="btn btn-outline-primary w-100">
+                                    <i class="fa-solid fa-plus"></i> Get New Hosting Plan
+                                </a>
+                            </div>
                         </div>
 
                         <div class="tab-pane fade" id="todos-tab">
@@ -963,6 +998,123 @@
         else if (rand > 0.2) box.classList.add('lvl-1');
 
         graphContainer.appendChild(box);
+    }
+
+    // ==========================================
+    // Hosting Orders Functions
+    // ==========================================
+    async function loadHostingOrders() {
+        const container = document.getElementById('hosting-orders-list');
+        if (!container) return;
+        
+        try {
+            const response = await fetch('/api/hosting/orders');
+            const data = await response.json();
+            
+            if (!data.success) {
+                container.innerHTML = '<p class="text-muted">Failed to load hosting orders.</p>';
+                return;
+            }
+            
+            if (data.orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state text-center py-4">
+                        <i class="fa-solid fa-server fa-3x mb-3 opacity-50"></i>
+                        <p>No hosting plans yet.</p>
+                        <a href="/hosting" class="btn btn-primary mt-2">Get Hosting</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            for (const order of data.orders) {
+                let statusClass = '';
+                let statusIcon = '';
+                
+                if (order.status === 'active') {
+                    statusClass = 'status-active';
+                    statusIcon = 'fa-circle-check';
+                } else if (order.status === 'cancelled') {
+                    statusClass = 'status-cancelled';
+                    statusIcon = 'fa-circle-xmark';
+                } else {
+                    statusClass = 'status-expired';
+                    statusIcon = 'fa-clock';
+                }
+                
+                html += `
+                    <div class="hosting-card">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <h6 class="m-0">
+                                <i class="fa-solid fa-crown text-warning me-2"></i>
+                                ${escapeHtml(order.plan)} Plan
+                            </h6>
+                            <span class="badge text-bg-warning text-dark">
+                                ${order.price} EGP
+                            </span>
+                        </div>
+                        
+                        <p class="muted-text mb-2">
+                            <i class="fa-solid fa-globe me-1"></i>
+                            Domain: ${escapeHtml(order.domain)}
+                        </p>
+                        
+                        <p class="muted-text mb-2">
+                            <i class="fa-regular fa-calendar me-1"></i>
+                            Created: ${order.created_at}
+                        </p>
+                        
+                        <p class="muted-text mb-2">
+                            <i class="fa-regular fa-clock me-1"></i>
+                            Expires: ${order.expires_at}
+                        </p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="${statusClass}">
+                                <i class="fa-solid ${statusIcon} me-1"></i>
+                                ${order.status === 'active' ? 'Active' : (order.status === 'cancelled' ? 'Cancelled' : 'Expired')}
+                            </span>
+                            
+                            ${order.status === 'active' ? `
+                                <button class="btn btn-sm btn-outline-danger" onclick="cancelHostingOrder(${order.id})">
+                                    <i class="fa-solid fa-ban"></i> Cancel
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading hosting orders:', error);
+            container.innerHTML = '<p class="text-muted">Error loading hosting orders.</p>';
+        }
+    }
+    
+    async function cancelHostingOrder(orderId) {
+        if (!confirm('Are you sure you want to cancel this hosting plan?')) return;
+        
+        try {
+            const response = await fetch(`/api/hosting/cancel/${orderId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                loadHostingOrders();
+            } else {
+                showToast(data.error || 'Failed to cancel', 'danger');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Failed to cancel hosting plan', 'danger');
+        }
     }
 
     {% if is_owner %}
@@ -1273,6 +1425,9 @@
             closeDeleteModal();
         }
     });
+    
+    // تحميل طلبات الاستضافة عند تحميل الصفحة
+    loadHostingOrders();
 </script>
 </body>
 </html>
