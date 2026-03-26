@@ -144,16 +144,21 @@ class Todo(db.Model):
         return f'<Todo {self.task_text}>'
 
 # ==========================================
-# Challenge
+# Challenge - المعدل بالكامل
 # ==========================================
 class Challenge(db.Model):
     __tablename__ = 'challenges'
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text)
-    difficulty = db.Column(db.String(50), default='easy')
-    points_reward = db.Column(db.Integer, default=10)
+    description = db.Column(db.Text, nullable=False)
+    language = db.Column(db.String(50), nullable=False, default='python')
+    difficulty = db.Column(db.String(20), nullable=False, default='beginner')
+    sample_input = db.Column(db.Text, nullable=True)
+    sample_output = db.Column(db.Text, nullable=True)
+    starter_code = db.Column(db.Text, nullable=True)
+    solution_code = db.Column(db.Text, nullable=True)
+    points = db.Column(db.Integer, default=10)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     submissions = db.relationship('ChallengeSubmission', backref='challenge', lazy=True, cascade='all, delete-orphan')
@@ -162,7 +167,7 @@ class Challenge(db.Model):
         return f'<Challenge {self.title}>'
 
 # ==========================================
-# ChallengeSubmission
+# ChallengeSubmission - المعدل بالكامل
 # ==========================================
 class ChallengeSubmission(db.Model):
     __tablename__ = 'challenge_submissions'
@@ -170,11 +175,9 @@ class ChallengeSubmission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    submitted_code = db.Column(db.Text)
+    code = db.Column(db.Text, nullable=False)
     is_passed = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f'<ChallengeSubmission {self.id}>'
-    
-    
