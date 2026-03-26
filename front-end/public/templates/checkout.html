@@ -99,7 +99,7 @@
         <div class="checkout-title">Choose Payment Method</div>
         <div class="checkout-subtitle">Select your preferred payment option to complete your order.</div>
 
-        <form method="POST">
+        <div id="paymentForm">
             <input type="hidden" name="book_name" id="book_name">
 <input type="hidden" name="price" id="price">
             <label class="payment-option d-block">
@@ -130,13 +130,15 @@
             <button type="button" class="confirm-btn" onclick="confirmOrder()">
                 Confirm Order
             </button>
-        </form>
+        </div>
     </div>
 <script>
 const radios = document.querySelectorAll('input[name="payment"]');
 const cardFields = document.getElementById('cardFields');
 const vodafoneField = document.getElementById('vodafoneField');
-
+radios.forEach(radio => radio.checked = false);
+cardFields.style.display = 'none';
+vodafoneField.style.display = 'none';
 radios.forEach(radio => {
     radio.addEventListener('change', () => {
         if (radio.value === 'card') {
@@ -163,6 +165,42 @@ if (bookName && price) {
     document.getElementById("price").value = price;
 }
 function confirmOrder() {
+    const selected = document.querySelector('input[name="payment"]:checked');
+
+    if (!selected) {
+        alert("Please choose a payment method");
+        return;
+    }
+
+    const method = selected.value;
+
+    // ✅ Vodafone validation
+    if (method === "vodafone") {
+        const number = document.querySelector('input[name="vodafone_number"]').value;
+
+    if (!/^\d{11}$/.test(number)) {
+    alert("Vodafone number must be exactly 11 digits");
+    return;
+}
+    }
+
+    // ✅ Visa validation
+    if (method === "card") {
+        const card = document.querySelector('input[name="card_number"]').value;
+        const cvv = document.querySelector('input[name="cvv"]').value;
+
+        if (card.length < 12) {
+            alert("Invalid card number");
+            return;
+        }
+
+        if (cvv.length < 3) {
+            alert("Invalid CVV");
+            return;
+        }
+    }
+
+    // 🔥 الجزء ده زي ما هو (مهم للبروفايل)
     let purchased = JSON.parse(localStorage.getItem("purchasedBooks")) || [];
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
@@ -177,7 +215,7 @@ function confirmOrder() {
     localStorage.setItem("purchasedBooks", JSON.stringify(purchased));
     localStorage.removeItem("cart");
 
-    window.location.href = "/profile";
+    window.location.href = "/success";
 }
 </script>
 </body>
