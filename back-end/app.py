@@ -271,6 +271,8 @@ def index():
 def home_page():
     posts = Post.query.order_by(Post.created_at.desc()).all()
     return render_template('html.html', posts=posts)
+
+
 @app.route('/book-details/<int:id>')
 @login_required
 def book_details(id):
@@ -280,6 +282,7 @@ def book_details(id):
         return "Book not found", 404
 
     return render_template('book-details.html', product=product)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
@@ -361,6 +364,8 @@ def logout_page():
     session.pop('username', None)
     flash('Logged out successfully.', 'info')
     return redirect(url_for('login_page'))
+
+
 @app.route('/checkout')
 @login_required
 def checkout_page():
@@ -371,6 +376,7 @@ def checkout_page():
 @login_required
 def success_page():
     return render_template('success.html')
+
 
 @app.route('/api/leaderboard')
 @login_required
@@ -934,6 +940,286 @@ def shop_orders_api():
 
 
 # ==========================================
+# Challenges APIs
+# ==========================================
+
+def get_challenge_points(difficulty):
+    """إرجاع نقاط التحدي حسب الصعوبة"""
+    points_map = {
+        'beginner': 10,
+        'intermediate': 25,
+        'advanced': 50
+    }
+    return points_map.get(difficulty, 10)
+
+
+def award_challenge_points(user, difficulty):
+    """منح نقاط للمستخدم عند حل التحدي"""
+    points = get_challenge_points(difficulty)
+    user.points = int(user.points or 0) + points
+    user.update_level()
+    db.session.commit()
+    return points
+
+
+def verify_python_solution(user_code, expected_output):
+    """التحقق من حل Python"""
+    try:
+        import sys
+        from io import StringIO
+        
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = StringIO()
+        
+        try:
+            exec(user_code)
+            output = captured_output.getvalue().strip()
+            return output == expected_output.strip()
+        except Exception:
+            return False
+        finally:
+            sys.stdout = old_stdout
+    except Exception:
+        return False
+
+
+def verify_html_solution(user_code, expected_output):
+    """التحقق من حل HTML/CSS"""
+    code_lower = user_code.lower()
+    expected_lower = expected_output.lower()
+    return expected_lower in code_lower
+
+
+@app.route('/api/challenges')
+@login_required
+def get_challenges():
+    """جلب قائمة التحديات"""
+    language = request.args.get('language', 'python')
+    challenges = Challenge.query.filter_by(language=language).all()
+    
+    solved_challenge_ids = set()
+    submissions = ChallengeSubmission.query.filter_by(
+        user_id=current_user.id,
+        is_passed=True
+    ).all()
+    
+    for sub in submissions:
+        solved_challenge_ids.add(sub.challenge_id)
+    
+    return jsonify({
+        'success': True,
+        'challenges': [{
+            'id': c.id,
+            'title': c.title,
+            'description': c.description,
+            'difficulty': c.difficulty,
+            'points': get_challenge_points(c.difficulty),
+            'sample_input': c.sample_input,
+            'sample_output': c.sample_output,
+            'starter_code': c.starter_code,
+            'solved': c.id in solved_challenge_ids
+        } for c in challenges]
+    })
+
+
+@app.route('/api/challenges/<int:challenge_id>/starter')
+@login_required
+def get_starter_code(challenge_id):
+    """جلب starter code للتحدي"""
+    challenge = Challenge.query.get_or_404(challenge_id)
+    return jsonify({
+        'success': True,
+        'starter_code': challenge.starter_code or ''
+    })
+
+
+@app.route('/api/challenges/<int:challenge_id>/submit', methods=['POST'])
+@login_required
+def submit_challenge(challenge_id):
+    """حل التحدي والتحقق من صحة الكود"""
+    data = request.get_json()
+    user_code = data.get('code', '').strip()
+    
+    if not user_code:
+        return jsonify({'success': False, 'error': 'No code provided'}), 400
+    
+    challenge = Challenge.query.get_or_404(challenge_id)
+    
+    existing_submission = ChallengeSubmission.query.filter_by(
+        user_id=current_user.id,
+        challenge_id=challenge_id,
+        is_passed=True
+    ).first()
+    
+    if existing_submission:
+        return jsonify({
+            'success': False, 
+            'error': 'You have already completed this challenge!',
+            'already_completed': True
+        }), 400
+    
+    is_correct = False
+    if challenge.language == 'python':
+        is_correct = verify_python_solution(user_code, challenge.sample_output)
+    elif challenge.language == 'web':
+        is_correct = verify_html_solution(user_code, challenge.sample_output)
+    
+    submission = ChallengeSubmission(
+        user_id=current_user.id,
+        challenge_id=challenge_id,
+        code=user_code,
+        is_passed=is_correct
+    )
+    db.session.add(submission)
+    
+    if is_correct:
+        points_earned = award_challenge_points(current_user, challenge.difficulty)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'is_correct': True,
+            'message': f'✅ Correct! You earned {points_earned} points!',
+            'points_earned': points_earned,
+            'user_points': current_user.points,
+            'user_level': current_user.level
+        })
+    else:
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'is_correct': False,
+            'message': '❌ Your solution is incorrect. Try again!',
+            'expected_output': challenge.sample_output
+        })
+
+
+@app.route('/api/user/stats')
+@login_required
+def get_user_stats():
+    """جلب إحصائيات المستخدم للتحديث الديناميكي"""
+    solved_labs = ChallengeSubmission.query.filter_by(
+        user_id=current_user.id,
+        is_passed=True
+    ).count()
+    
+    return jsonify({
+        'success': True,
+        'labs_solved': solved_labs,
+        'points': current_user.points,
+        'level': current_user.level
+    })
+
+
+def seed_challenges():
+    """إضافة تحديات أولية لقاعدة البيانات"""
+    with app.app_context():
+        if Challenge.query.count() == 0:
+            challenges = [
+                # Python - Beginner
+                Challenge(
+                    title="طباعة نص بسيط",
+                    description="استخدم أمر الطباعة في بايثون لطباعة 'Hello, PAD!'",
+                    language="python",
+                    difficulty="beginner",
+                    sample_input="لا يوجد",
+                    sample_output="Hello, PAD!",
+                    starter_code="# اكتب الكود هنا\nprint('Hello, PAD!')",
+                    points=10
+                ),
+                Challenge(
+                    title="حاصل الجمع",
+                    description="اكتب برنامج يطبع ناتج جمع 5 و 3",
+                    language="python",
+                    difficulty="beginner",
+                    sample_input="5 + 3",
+                    sample_output="8",
+                    starter_code="# اكتب الكود هنا\n# احسب 5 + 3 واطبع الناتج\n",
+                    points=10
+                ),
+                Challenge(
+                    title="التحقق من العدد الزوجي",
+                    description="اكتب كود يطبع 'Even' لو العدد زوجي، و 'Odd' لو فردي",
+                    language="python",
+                    difficulty="beginner",
+                    sample_input="num = 4",
+                    sample_output="Even",
+                    starter_code="# اكتب الكود هنا\nnum = 4\n\n# اكتب الشرط هنا\nif num % 2 == 0:\n    print('Even')\nelse:\n    print('Odd')",
+                    points=10
+                ),
+                Challenge(
+                    title="حلقة for",
+                    description="اطبع الأرقام من 1 إلى 5 باستخدام حلقة for",
+                    language="python",
+                    difficulty="intermediate",
+                    sample_input="لا يوجد",
+                    sample_output="1\n2\n3\n4\n5",
+                    starter_code="# اكتب الكود هنا\nfor i in range(1, 6):\n    print(i)",
+                    points=25
+                ),
+                Challenge(
+                    title="دالة الجمع",
+                    description="اكتب دالة sum_numbers(a, b) ترجع ناتج جمع رقمين",
+                    language="python",
+                    difficulty="intermediate",
+                    sample_input="sum_numbers(3, 7)",
+                    sample_output="10",
+                    starter_code="# اكتب الكود هنا\ndef sum_numbers(a, b):\n    return a + b\n\n# اختبر الدالة\nprint(sum_numbers(3, 7))",
+                    points=25
+                ),
+                # Web - Beginner
+                Challenge(
+                    title="عنوان رئيسي HTML",
+                    description="قم بإنشاء عنوان من النوع الأول H1 واكتب بداخله 'PAD Platform'",
+                    language="web",
+                    difficulty="beginner",
+                    sample_input="استخدم تاج <h1>",
+                    sample_output="<h1>PAD Platform</h1>",
+                    starter_code="<!-- اكتب كود HTML هنا -->\n<h1>PAD Platform</h1>",
+                    points=10
+                ),
+                Challenge(
+                    title="زر تفاعلي",
+                    description="قم بإنشاء زر <button> واكتب عليه 'Click Me'",
+                    language="web",
+                    difficulty="beginner",
+                    sample_input="تاج <button>",
+                    sample_output="<button>Click Me</button>",
+                    starter_code="<!-- اكتب كود HTML هنا -->\n<button>Click Me</button>",
+                    points=10
+                ),
+                Challenge(
+                    title="فقرة نصية",
+                    description="قم بإنشاء فقرة <p> تحتوي على 'Welcome to PAD'",
+                    language="web",
+                    difficulty="beginner",
+                    sample_input="تاج <p>",
+                    sample_output="<p>Welcome to PAD</p>",
+                    starter_code="<!-- اكتب كود HTML هنا -->\n<p>Welcome to PAD</p>",
+                    points=10
+                ),
+                Challenge(
+                    title="تنسيق CSS أساسي",
+                    description="غير لون النص في الفقرة إلى اللون الأزرق",
+                    language="web",
+                    difficulty="intermediate",
+                    sample_input="style color: blue",
+                    sample_output="<p style='color: blue;'>نص أزرق</p>",
+                    starter_code="<!-- اكتب كود HTML/CSS هنا -->\n<p style='color: blue;'>نص أزرق</p>",
+                    points=25
+                )
+            ]
+            
+            for challenge in challenges:
+                db.session.add(challenge)
+            
+            db.session.commit()
+            print(f"✅ تمت إضافة {len(challenges)} تحدياً بنجاح!")
+        else:
+            print("⚠️ التحديات موجودة بالفعل في قاعدة البيانات")
+
+
+# ==========================================
 # Pages
 # ==========================================
 @app.route('/ai')
@@ -1077,6 +1363,7 @@ def support_page():
 def init_database():
     with app.app_context():
         db.create_all()
+        seed_challenges()
         print("✅ Database initialized successfully!")
 
 
