@@ -3,7 +3,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import SQLAlchemyError
-from models import db, User, Post, Comment, Like, Todo, Challenge, ChallengeSubmission
+from models import db, User, Post, Comment, Like, Todo, Challenge, ChallengeSubmission, HostingOrder
 from datetime import datetime
 import os
 
@@ -1218,7 +1218,114 @@ def seed_challenges():
         else:
             print("⚠️ التحديات موجودة بالفعل في قاعدة البيانات")
 
+# ==========================================
+# Hosting Orders API
+# ==========================================
+@app.route('/api/hosting/order', methods=['POST'])
+@login_required
+def create_hosting_order():
+    """إنشاء طلب استضافة جديد"""
+    
+    from datetime import timedelta
+    
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'success': False, 'error': 'No data received'}), 400
+    
+    plan_name = data.get('plan')
+    domain = data.get('domain', '')
+    price = data.get('price', 0)
+    billing_period = data.get('billing', 'monthly')  # monthly or annual
+    
+    if not plan_name:
+        return jsonify({'success': False, 'error': 'Plan is required'}), 400
+    
+    # حساب تاريخ الانتهاء
+    if billing_period == 'monthly':
+        expires_at = datetime.utcnow() + timedelta(days=30)
+    else:
+        expires_at = datetime.utcnow() + timedelta(days=365)
+    
+    # إنشاء الطلب
+    order = HostingOrder(
+        user_id=current_user.id,
+        plan_name=plan_name,
+        price=price,
+        domain=domain,
+        status='active',
+        expires_at=expires_at
+    )
+    
+    db.session.add(order)
+    
+    # منح نقاط (10 نقاط لكل 100 جنيه)
+    points_earned = int(price // 10)
+    award_points(current_user, points_earned)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'Hosting plan "{plan_name}" purchased successfully!',
+        'order': {
+            'id': order.id,
+            'plan': order.plan_name,
+            'price': order.price,
+            'domain': order.domain,
+            'status': order.status,
+            'created_at': order.created_at.strftime('%Y-%m-%d %H:%M'),
+            'expires_at': order.expires_at.strftime('%Y-%m-%d') if order.expires_at else None
+        },
+        'points_earned': points_earned,
+        'user_points': current_user.points,
+        'user_level': current_user.level
+    })
 
+
+@app.route('/api/hosting/orders')
+@login_required
+def get_hosting_orders():
+    """جلب طلبات الاستضافة للمستخدم"""
+    
+    
+    orders = HostingOrder.query.filter_by(user_id=current_user.id).order_by(HostingOrder.created_at.desc()).all()
+    
+    return jsonify({
+        'success': True,
+        'orders': [{
+            'id': o.id,
+            'plan': o.plan_name,
+            'price': o.price,
+            'domain': o.domain or 'Not set',
+            'status': o.status,
+            'created_at': o.created_at.strftime('%Y-%m-%d %H:%M'),
+            'expires_at': o.expires_at.strftime('%Y-%m-%d') if o.expires_at else 'N/A'
+        } for o in orders]
+    })
+
+
+@app.route('/api/hosting/cancel/<int:order_id>', methods=['POST'])
+@login_required
+def cancel_hosting_order(order_id):
+    """إلغاء طلب استضافة"""
+
+    
+    order = HostingOrder.query.get_or_404(order_id)
+    
+    if order.user_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    if order.status == 'cancelled':
+        return jsonify({'success': False, 'error': 'Order already cancelled'}), 400
+    
+    order.status = 'cancelled'
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'Hosting plan "{order.plan_name}" has been cancelled.'
+    })
 # ==========================================
 # Pages
 # ==========================================
