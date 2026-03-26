@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} | PAD Store</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body{
+            background:#070b17;
+            color:#fff;
+            font-family:Segoe UI, Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .page-wrap{
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:40px 20px;
+        }
+        .details-card{
+            max-width:900px;
+            width:100%;
+            background:rgba(15,25,51,.85);
+            border:1px solid rgba(255,255,255,.08);
+            border-radius:24px;
+            padding:35px;
+            box-shadow:0 20px 40px rgba(0,0,0,.35);
+        }
+        .icon-box{
+            width:120px;
+            height:120px;
+            border-radius:24px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:60px;
+            margin-bottom:20px;
+            background:#0b132a;
+        }
+        .price{
+            color:#fbbf24;
+            font-size:32px;
+            font-weight:900;
+        }
+        .badge-cat{
+            display:inline-block;
+            padding:8px 14px;
+            border-radius:999px;
+            background:rgba(27,116,228,.15);
+            color:#6ce5ff;
+            font-weight:700;
+            margin-bottom:15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrap">
+        <div class="details-card">
+            <a href="{{ url_for('shop_page') }}" class="btn btn-outline-light mb-4">
+                <i class="fa-solid fa-arrow-left me-2"></i> Back to Shop
+            </a>
+
+            <div class="icon-box">
+                <i class="fa-solid {{ product.icon }}" style="color: {{ product.color }};"></i>
+            </div>
+
+            <div class="badge-cat">{{ product.category }}</div>
+
+            <h1 class="fw-bold mb-3">{{ product.name }}</h1>
+
+            <p class="text-light opacity-75 fs-5 mb-4">
+                {{ product.desc }}
+            </p>
+
+            <p class="mb-2"><strong>Stock:</strong> {{ product.stock }}</p>
+            <p class="price">{{ product.price }} EGP</p>
+
+            <a href="{{ url_for('shop_page') }}" class="btn btn-primary mt-3 px-4 py-2">
+                <i class="fa-solid fa-cart-shopping me-2"></i> Back to Buy
+            </a>
+        </div>
+    </div>
+</body>
+</html>
