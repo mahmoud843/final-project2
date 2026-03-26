@@ -2,16 +2,22 @@ from flask import Flask, request, redirect, url_for, session, render_template, f
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from sqlalchemy.exc import SQLAlchemyError
 from models import db, User, Post, Comment, Like, Todo, Challenge, ChallengeSubmission
+from datetime import datetime
 import os
-
-from models import db, User, Post, Comment, Like, Todo
 
 # ==========================================
 # إعداد المسارات
 # ==========================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PUBLIC_DIR = os.path.join(BASE_DIR, '..', 'front-end', 'public')
+
+# خليه مرن لو front-end جوه نفس المجلد أو بره
+PUBLIC_CANDIDATES = [
+    os.path.join(BASE_DIR, 'front-end', 'public'),
+    os.path.join(BASE_DIR, '..', 'front-end', 'public'),
+]
+PUBLIC_DIR = next((p for p in PUBLIC_CANDIDATES if os.path.isdir(p)), PUBLIC_CANDIDATES[0])
 
 app = Flask(
     __name__,
@@ -31,7 +37,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(PUBLIC_DIR, 'static', 'images')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
-# إنشاء فولدر الصور لو مش موجود
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ==========================================
@@ -52,8 +57,184 @@ login_manager.login_message = 'Please login first'
 # ==========================================
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# ==========================================
+# بيانات المتجر
+# ==========================================
+SHOP_PRODUCTS = [
+    {
+        "id": 1,
+        "name": "HTML5 Visual Guide",
+        "category": "frontend",
+        "price": 80,
+        "desc": "Learn the structure of the web. Perfect for absolute beginners.",
+        "icon": "fa-html5",
+        "color": "#e34f26",
+        "stock": 25
+    },
+    {
+        "id": 2,
+        "name": "CSS3 Mastery Book",
+        "category": "frontend",
+        "price": 120,
+        "desc": "Master styling, Flexbox, and Grid to build beautiful responsive websites.",
+        "icon": "fa-css3-alt",
+        "color": "#1572b6",
+        "stock": 20
+    },
+    {
+        "id": 3,
+        "name": "JavaScript Deep Dive",
+        "category": "frontend",
+        "price": 150,
+        "desc": "Understand JS mechanics, DOM manipulation, and ES6+ features.",
+        "icon": "fa-js",
+        "color": "#f7df1e",
+        "stock": 18
+    },
+    {
+        "id": 4,
+        "name": "Python for Backend",
+        "category": "backend",
+        "price": 200,
+        "desc": "Learn Python programming, logic, and how to build strong backend systems.",
+        "icon": "fa-python",
+        "color": "#3776ab",
+        "stock": 15
+    }
+]
+
+
+# ==========================================
+# Helpers
+# ==========================================
+def get_product_by_id(product_id):
+    for product in SHOP_PRODUCTS:
+        if product["id"] == product_id:
+            return product
+    return None
+
+
+def get_cart():
+    cart = session.get('cart', [])
+    return cart if isinstance(cart, list) else []
+
+
+def save_cart(cart):
+    session['cart'] = cart
+    session.modified = True
+
+
+def clear_cart():
+    session['cart'] = []
+    session.modified = True
+
+
+def get_user_orders():
+    orders = session.get('orders_history', [])
+    return orders if isinstance(orders, list) else []
+
+
+def save_user_orders(orders):
+    session['orders_history'] = orders
+    session.modified = True
+
+
+def calculate_cart_totals(cart):
+    total = 0
+    count = 0
+
+    for item in cart:
+        qty = int(item.get('qty', 0))
+        price = float(item.get('price', 0))
+        total += qty * price
+        count += qty
+
+    return {
+        "items_count": count,
+        "total_price": round(total, 2)
+    }
+
+
+def award_points(user, points):
+    if not user:
+        return
+    user.points = int(user.points or 0) + int(points)
+    user.update_level()
+
+
+def normalize_order_for_profile(order):
+    items = order.get('items')
+    if not items:
+        items = order.get('cart', [])
+    return {
+        "order_id": order.get("order_id"),
+        "created_at": order.get("created_at"),
+        "total": order.get("total", 0),
+        "items": items
+    }
+
+
+def get_shop_stats():
+    cart = get_cart()
+    orders = get_user_orders()
+
+    total_spent = sum(float(order.get('total', 0)) for order in orders)
+    total_orders = len(orders)
+    total_items_bought = sum(
+        sum(int(item.get('qty', 0)) for item in order.get('items', order.get('cart', [])))
+        for order in orders
+    )
+    last_order = orders[-1] if orders else None
+
+    return {
+        "cart": cart,
+        "cart_summary": calculate_cart_totals(cart),
+        "shop_orders": [normalize_order_for_profile(order) for order in reversed(orders)],
+        "orders_count": total_orders,
+        "total_spent": round(total_spent, 2),
+        "total_items_bought": total_items_bought,
+        "last_order": last_order
+    }
+
+
+def build_profile_context(user):
+    projects = Post.query.filter_by(user_id=user.id, post_type='project').order_by(Post.created_at.desc()).all()
+    followers_count = user.followers.count()
+
+    try:
+        labs_count = ChallengeSubmission.query.filter_by(user_id=user.id, is_passed=True).count()
+    except Exception:
+        labs_count = Post.query.filter_by(user_id=user.id, post_type='lab').count()
+
+    leaderboard_users = User.query.order_by(User.points.desc(), User.level.desc()).limit(5).all()
+
+    context = {
+        "user": user,
+        "projects": projects,
+        "followers_count": followers_count,
+        "labs_count": labs_count,
+        "leaderboard_users": leaderboard_users,
+        "is_following": current_user.is_authenticated and current_user.id != user.id and current_user.is_following(user),
+        "todos": [],
+        "orders_count": 0,
+        "total_spent": 0,
+        "shop_orders": []
+    }
+
+    if current_user.is_authenticated and current_user.id == user.id:
+        context["todos"] = Todo.query.filter_by(user_id=user.id).order_by(
+            Todo.is_completed.asc(),
+            Todo.created_at.desc()
+        ).all()
+        context.update(get_shop_stats())
+
+    return context
+
 
 # ==========================================
 # User Loader
@@ -61,6 +242,19 @@ def allowed_file(filename):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+# ==========================================
+# Context Processor
+# ==========================================
+@app.context_processor
+def inject_global_cart_data():
+    cart_summary = calculate_cart_totals(get_cart())
+    return {
+        "global_cart_count": cart_summary["items_count"],
+        "global_cart_total": cart_summary["total_price"]
+    }
+
 
 # ==========================================
 # Routes
@@ -77,7 +271,15 @@ def index():
 def home_page():
     posts = Post.query.order_by(Post.created_at.desc()).all()
     return render_template('html.html', posts=posts)
+@app.route('/book-details/<int:id>')
+@login_required
+def book_details(id):
+    product = get_product_by_id(id)
 
+    if not product:
+        return "Book not found", 404
+
+    return render_template('book-details.html', product=product)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
@@ -97,10 +299,12 @@ def login_page():
             login_user(user)
             session['user_id'] = user.id
             session['username'] = user.username
+            session.setdefault('cart', [])
+            session.setdefault('orders_history', [])
             flash(f'Welcome back, {user.username}!', 'success')
             return redirect(url_for('home_page'))
-        else:
-            return render_template('login.html', message="❌ Invalid email or password")
+
+        return render_template('login.html', message="❌ Invalid email or password")
 
     return render_template('login.html')
 
@@ -147,6 +351,27 @@ def signup_page():
         return redirect(url_for('login_page'))
 
     return render_template('signup.html')
+
+
+@app.route('/logout')
+@login_required
+def logout_page():
+    logout_user()
+    session.pop('user_id', None)
+    session.pop('username', None)
+    flash('Logged out successfully.', 'info')
+    return redirect(url_for('login_page'))
+@app.route('/checkout')
+@login_required
+def checkout_page():
+    return render_template('checkout.html')
+
+
+@app.route('/success')
+@login_required
+def success_page():
+    return render_template('success.html')
+
 @app.route('/api/leaderboard')
 @login_required
 def leaderboard():
@@ -162,6 +387,8 @@ def leaderboard():
         }
         for u in top_users
     ])
+
+
 @app.route('/create-project', methods=['GET', 'POST'])
 @login_required
 def create_project_page():
@@ -186,48 +413,53 @@ def create_project_page():
         )
 
         db.session.add(new_post)
+        award_points(current_user, 10)
         db.session.commit()
 
         return redirect(url_for('home_page'))
 
     return render_template('create-project.html')
 
+
 @app.route('/profile')
 @login_required
 def profile():
-    projects = Post.query.filter_by(user_id=current_user.id, post_type='project').all()
-    followers_count = current_user.followers.count()
-    labs_count = ChallengeSubmission.query.filter_by(user_id=current_user.id, is_passed=True).count()
+    context = build_profile_context(current_user)
+    return render_template('profile.html', **context)
 
-    leaderboard_users = User.query.order_by(User.points.desc(), User.level.desc()).limit(5).all()
-
-    return render_template(
-        'profile.html',
-        user=current_user,
-        projects=projects,
-        followers_count=followers_count,
-        labs_count=labs_count,
-        is_following=False,
-        leaderboard_users=leaderboard_users
-    )
 
 @app.route('/profile/<int:user_id>')
 @login_required
 def view_profile(user_id):
     user = User.query.get_or_404(user_id)
-    projects = Post.query.filter_by(user_id=user_id, post_type='project').all()
-    followers_count = user.followers.count()
-    is_following = current_user.is_following(user)
-    labs_count = Post.query.filter_by(user_id=user_id, post_type='lab').count()
+    context = build_profile_context(user)
+    return render_template('profile.html', **context)
 
-    return render_template(
-        'profile.html',
-        user=user,
-        projects=projects,
-        followers_count=followers_count,
-        labs_count=labs_count,
-        is_following=is_following
-    )
+
+@app.route('/api/profile/summary')
+@login_required
+def profile_summary():
+    context = build_profile_context(current_user)
+    return jsonify({
+        "success": True,
+        "user": {
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email,
+            "profile_image": current_user.profile_image,
+            "bio": current_user.bio,
+            "points": current_user.points,
+            "level": current_user.level
+        },
+        "stats": {
+            "projects_count": len(context["projects"]),
+            "followers_count": context["followers_count"],
+            "labs_count": context["labs_count"],
+            "orders_count": context["orders_count"],
+            "total_spent": context["total_spent"],
+            "todos_count": len(context["todos"])
+        }
+    })
 
 
 @app.route('/api/add-project', methods=['POST'])
@@ -238,14 +470,21 @@ def add_project():
     if not data:
         return jsonify({'error': 'No data received'}), 400
 
+    title = data.get('name', '').strip()
+    description = data.get('description', '').strip()
+
+    if not title:
+        return jsonify({'error': 'Project name is required'}), 400
+
     new_project = Post(
         user_id=current_user.id,
         post_type='project',
-        title=data.get('name', '').strip(),
-        description=data.get('description', '').strip()
+        title=title,
+        description=description
     )
 
     db.session.add(new_project)
+    award_points(current_user, 10)
     db.session.commit()
 
     return jsonify({
@@ -254,7 +493,9 @@ def add_project():
             'id': new_project.id,
             'name': new_project.title,
             'description': new_project.description
-        }
+        },
+        'user_points': current_user.points,
+        'user_level': current_user.level
     })
 
 
@@ -288,6 +529,7 @@ def follow_user(user_id):
         followed = False
     else:
         current_user.follow(user_to_follow)
+        award_points(user_to_follow, 2)
         followed = True
 
     db.session.commit()
@@ -331,7 +573,7 @@ def get_suggestions():
 @app.route('/api/like/<int:post_id>', methods=['POST'])
 @login_required
 def like_post(post_id):
-    Post.query.get_or_404(post_id)
+    post = Post.query.get_or_404(post_id)
 
     like = Like.query.filter_by(post_id=post_id, user_id=current_user.id).first()
 
@@ -342,6 +584,9 @@ def like_post(post_id):
         new_like = Like(post_id=post_id, user_id=current_user.id)
         db.session.add(new_like)
         liked = True
+
+        if post.author and post.author.id != current_user.id:
+            award_points(post.author, 1)
 
     db.session.commit()
 
@@ -357,7 +602,7 @@ def like_post(post_id):
 @app.route('/api/comment/<int:post_id>', methods=['POST'])
 @login_required
 def add_comment(post_id):
-    Post.query.get_or_404(post_id)
+    post = Post.query.get_or_404(post_id)
     data = request.get_json()
 
     if not data:
@@ -375,6 +620,10 @@ def add_comment(post_id):
     )
 
     db.session.add(new_comment)
+
+    if post.author and post.author.id != current_user.id:
+        award_points(post.author, 2)
+
     db.session.commit()
 
     return jsonify({
@@ -403,6 +652,9 @@ def get_comments(post_id):
     } for c in comments])
 
 
+# ==========================================
+# Avatar & Bio APIs
+# ==========================================
 @app.route('/api/upload-avatar', methods=['POST'])
 @login_required
 def upload_avatar():
@@ -443,7 +695,246 @@ def update_bio():
 
 
 # ==========================================
-# صفحات إضافية
+# Todos APIs
+# ==========================================
+@app.route('/api/todos', methods=['GET', 'POST'])
+@login_required
+def todos_api():
+    if request.method == 'GET':
+        todos = Todo.query.filter_by(user_id=current_user.id).order_by(
+            Todo.is_completed.asc(),
+            Todo.created_at.desc()
+        ).all()
+        return jsonify({
+            "success": True,
+            "todos": [
+                {
+                    "id": todo.id,
+                    "task_text": todo.task_text,
+                    "is_completed": todo.is_completed,
+                    "created_at": todo.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                }
+                for todo in todos
+            ]
+        })
+
+    data = request.get_json() or {}
+    task_text = data.get('task_text', '').strip()
+
+    if not task_text:
+        return jsonify({'error': 'Task text is required'}), 400
+
+    todo = Todo(user_id=current_user.id, task_text=task_text)
+    db.session.add(todo)
+    award_points(current_user, 1)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "todo": {
+            "id": todo.id,
+            "task_text": todo.task_text,
+            "is_completed": todo.is_completed,
+            "created_at": todo.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        },
+        "user_points": current_user.points,
+        "user_level": current_user.level
+    })
+
+
+@app.route('/api/todos/<int:todo_id>/toggle', methods=['POST'])
+@login_required
+def toggle_todo(todo_id):
+    todo = Todo.query.get_or_404(todo_id)
+
+    if todo.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    todo.is_completed = not todo.is_completed
+    if todo.is_completed:
+        award_points(current_user, 2)
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "id": todo.id,
+        "is_completed": todo.is_completed
+    })
+
+
+@app.route('/api/todos/<int:todo_id>', methods=['DELETE'])
+@login_required
+def delete_todo(todo_id):
+    todo = Todo.query.get_or_404(todo_id)
+
+    if todo.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    db.session.delete(todo)
+    db.session.commit()
+
+    return jsonify({"success": True})
+
+
+# ==========================================
+# Shop APIs
+# ==========================================
+@app.route('/api/shop/products')
+@login_required
+def shop_products():
+    category = request.args.get('category', '').strip().lower()
+    search = request.args.get('search', '').strip().lower()
+
+    products = SHOP_PRODUCTS
+
+    if category and category != 'all':
+        products = [p for p in products if p['category'] == category]
+
+    if search:
+        products = [
+            p for p in products
+            if search in p['name'].lower() or search in p['desc'].lower()
+        ]
+
+    return jsonify({
+        "success": True,
+        "products": products
+    })
+
+
+@app.route('/api/shop/cart', methods=['GET'])
+@login_required
+def shop_cart():
+    cart = get_cart()
+    summary = calculate_cart_totals(cart)
+
+    return jsonify({
+        "success": True,
+        "cart": cart,
+        "items_count": summary["items_count"],
+        "total_price": summary["total_price"]
+    })
+
+
+@app.route('/api/shop/cart/add', methods=['POST'])
+@login_required
+def add_to_cart_api():
+    data = request.get_json() or {}
+    product_id = data.get('product_id')
+    qty = int(data.get('qty', 1))
+
+    if not product_id:
+        return jsonify({"success": False, "message": "product_id is required"}), 400
+
+    product = get_product_by_id(int(product_id))
+    if not product:
+        return jsonify({"success": False, "message": "Product not found"}), 404
+
+    if qty <= 0:
+        qty = 1
+
+    cart = get_cart()
+    existing = next((item for item in cart if item["id"] == product["id"]), None)
+
+    if existing:
+        existing["qty"] += qty
+    else:
+        cart.append({
+            "id": product["id"],
+            "name": product["name"],
+            "price": product["price"],
+            "category": product["category"],
+            "qty": qty,
+            "icon": product.get("icon"),
+            "desc": product.get("desc")
+        })
+
+    save_cart(cart)
+    summary = calculate_cart_totals(cart)
+
+    return jsonify({
+        "success": True,
+        "message": f"{product['name']} added to cart",
+        "cart": cart,
+        "items_count": summary["items_count"],
+        "total_price": summary["total_price"]
+    })
+
+
+@app.route('/api/shop/cart/update', methods=['POST'])
+@login_required
+def update_cart_item_api():
+    data = request.get_json() or {}
+    product_id = data.get('product_id')
+    qty = int(data.get('qty', 1))
+
+    if not product_id:
+        return jsonify({"success": False, "message": "product_id is required"}), 400
+
+    cart = get_cart()
+    item = next((item for item in cart if item["id"] == int(product_id)), None)
+
+    if not item:
+        return jsonify({"success": False, "message": "Item not found in cart"}), 404
+
+    if qty <= 0:
+        cart = [i for i in cart if i["id"] != int(product_id)]
+    else:
+        item["qty"] = qty
+
+    save_cart(cart)
+    summary = calculate_cart_totals(cart)
+
+    return jsonify({
+        "success": True,
+        "message": "Cart updated successfully",
+        "cart": cart,
+        "items_count": summary["items_count"],
+        "total_price": summary["total_price"]
+    })
+
+
+@app.route('/api/shop/cart/remove/<int:product_id>', methods=['DELETE'])
+@login_required
+def remove_cart_item_api(product_id):
+    cart = get_cart()
+    cart = [item for item in cart if item["id"] != product_id]
+    save_cart(cart)
+    summary = calculate_cart_totals(cart)
+
+    return jsonify({
+        "success": True,
+        "message": "Item removed from cart",
+        "cart": cart,
+        "items_count": summary["items_count"],
+        "total_price": summary["total_price"]
+    })
+
+
+@app.route('/api/shop/cart/clear', methods=['POST'])
+@login_required
+def clear_cart_api():
+    clear_cart()
+    return jsonify({
+        "success": True,
+        "message": "Cart cleared successfully"
+    })
+
+
+@app.route('/api/shop/orders')
+@login_required
+def shop_orders_api():
+    orders = get_user_orders()
+    return jsonify({
+        "success": True,
+        "orders_count": len(orders),
+        "orders": [normalize_order_for_profile(order) for order in reversed(orders)]
+    })
+
+
+# ==========================================
+# Pages
 # ==========================================
 @app.route('/ai')
 @login_required
@@ -462,21 +953,70 @@ def codelab_page():
 def shop_page():
     return render_template('shop.html')
 
+
 @app.route('/checkout', methods=['POST'])
 @login_required
 def checkout():
-    data = request.get_json()
+    data = request.get_json() or {}
 
-    cart = data.get("cart", [])
-    total = data.get("total", 0)
+    incoming_cart = data.get("cart")
+    incoming_total = data.get("total")
+
+    cart = incoming_cart if incoming_cart is not None else get_cart()
 
     if not cart:
-        return jsonify({"status": "error", "message": "Cart is empty"})
+        return jsonify({"status": "error", "message": "Cart is empty"}), 400
+
+    computed_summary = calculate_cart_totals(cart)
+    total = float(incoming_total) if incoming_total is not None else computed_summary["total_price"]
+
+    order_items = []
+    for item in cart:
+        order_items.append({
+            "name": item.get("name"),
+            "qty": int(item.get("qty", 1)),
+            "price": float(item.get("price", 0))
+        })
+
+    order = {
+        "order_id": f"ORD-{current_user.id}-{int(datetime.utcnow().timestamp())}",
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "items": order_items,
+        "total": round(total, 2),
+        "items_count": computed_summary["items_count"],
+        "created_at": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    }
+
+    orders = get_user_orders()
+    orders.append(order)
+    save_user_orders(orders)
+    clear_cart()
+
+    award_points(current_user, max(5, int(total // 50)))
+
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
 
     return jsonify({
         "status": "success",
-        "message": f"Order completed successfully! Total paid: {total} EGP"
+        "message": f"Order completed successfully! Total paid: {round(total, 2)} EGP",
+        "order": order,
+        "profile_redirect": url_for('profile'),
+        "shop_stats": {
+            "orders_count": len(orders),
+            "total_spent": round(sum(float(order.get('total', 0)) for order in orders), 2)
+        },
+        "user_points": current_user.points,
+        "user_level": current_user.level
     })
+
+
+# ==========================================
+# Hosting Pages
+# ==========================================
 @app.route('/hosting')
 @login_required
 def hosting_page():
@@ -531,16 +1071,8 @@ def support_page():
     return render_template('support.html')
 
 
-@app.route('/logout', methods=['POST'])
-@login_required
-def logout():
-    logout_user()
-    session.clear()
-    return redirect(url_for('login_page'))
-
-
 # ==========================================
-# تهيئة قاعدة البيانات
+# DB init
 # ==========================================
 def init_database():
     with app.app_context():
