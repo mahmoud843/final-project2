@@ -14,7 +14,7 @@
   <!-- ربط ملف الـ CSS باستخدام Flask -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   
-  <!-- ستايل سهم الرجوع فقط -->
+  <!-- ستايل سهم الرجوع ورسائل النجاح -->
   <style>
       .back-to-home {
           display: inline-flex;
@@ -34,6 +34,29 @@
           background: rgba(255, 255, 255, 0.1);
           color: #fff;
           transform: translateX(-3px);
+      }
+      
+      /* تنسيق رسالة النجاح */
+      .toast-notification {
+          position: fixed;
+          bottom: 30px;
+          right: 30px;
+          background: #22c55e;
+          color: white;
+          padding: 15px 25px;
+          border-radius: 12px;
+          z-index: 9999;
+          font-weight: bold;
+          animation: slideIn 0.3s ease;
+          box-shadow: 0 10px 30px rgba(34,197,94,0.3);
+      }
+      @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes slideOut {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(100%); opacity: 0; }
       }
   </style>
 </head>
@@ -601,9 +624,131 @@ $ fastctl deploy --region=eu-west
       </div>
     </footer>
   </main>
-
-
-  <!-- ربط ملف الـ JS باستخدام Flask -->
+  
+  <!-- Script للطلب -->
+  <script>
+    // حساب السعر والخصم
+    function calculateTotal() {
+        const planSelect = document.getElementById('orderPlan');
+        const promoInput = document.getElementById('promo');
+        const sumSubtotal = document.getElementById('sumSubtotal');
+        const sumDiscount = document.getElementById('sumDiscount');
+        const sumTotal = document.getElementById('sumTotal');
+        
+        let price = 0;
+        const plan = planSelect.value;
+        
+        if (plan === 'Starter') price = 89;
+        else if (plan === 'Business') price = 179;
+        else if (plan === 'Cloud') price = 299;
+        
+        let discount = 0;
+        const promo = promoInput.value.trim().toUpperCase();
+        
+        if (promo === 'FAST20') discount = price * 0.2;
+        else if (promo === 'WELCOME10') discount = price * 0.1;
+        
+        const total = price - discount;
+        
+        sumSubtotal.innerHTML = `EGP ${price}`;
+        sumDiscount.innerHTML = `EGP ${Math.round(discount)}`;
+        sumTotal.innerHTML = `EGP ${Math.round(total)}`;
+        
+        return { price, discount, total };
+    }
+    
+    // عرض رسالة منبثقة
+    function showToast(message, isSuccess = true) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.style.background = isSuccess ? '#22c55e' : '#ef4444';
+        toast.innerHTML = `<i class="fa-solid ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+    // إرسال الطلب
+    async function placeOrder(event) {
+        event.preventDefault();
+        
+        const fullName = document.getElementById('fullName').value;
+        const phone = document.getElementById('phone').value;
+        const email = document.getElementById('orderEmail').value;
+        const plan = document.getElementById('orderPlan').value;
+        const payment = document.getElementById('payment').value;
+        const promo = document.getElementById('promo').value;
+        
+        if (!fullName || !phone || !email) {
+            showToast('Please fill all required fields', false);
+            return;
+        }
+        
+        const { price, discount, total } = calculateTotal();
+        
+        // إنشاء دومين من الاسم
+        const domain = `${fullName.replace(/\s/g, '').toLowerCase()}.com`;
+        
+        const orderButton = document.querySelector('#orderForm button[type="submit"]');
+        const originalText = orderButton.innerHTML;
+        orderButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        orderButton.disabled = true;
+        
+        try {
+            const response = await fetch('/api/hosting/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    plan: plan,
+                    domain: domain,
+                    price: total,
+                    billing: 'monthly'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast(result.message, true);
+                
+                // التوجيه للبروفايل بعد 2 ثانية
+                setTimeout(() => {
+                    window.location.href = '/profile';
+                }, 2000);
+            } else {
+                showToast(result.error || 'Order failed', false);
+                orderButton.innerHTML = originalText;
+                orderButton.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Connection error. Please try again.', false);
+            orderButton.innerHTML = originalText;
+            orderButton.disabled = false;
+        }
+    }
+    
+    // ربط الحدث عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        const orderForm = document.getElementById('orderForm');
+        if (orderForm) {
+            orderForm.addEventListener('submit', placeOrder);
+        }
+        
+        const planSelect = document.getElementById('orderPlan');
+        const promoInput = document.getElementById('promo');
+        
+        if (planSelect) planSelect.addEventListener('change', calculateTotal);
+        if (promoInput) promoInput.addEventListener('input', calculateTotal);
+        
+        calculateTotal();
+    });
+  </script>
+  
+  <!-- ربط ملف الـ JS الأصلي (إذا كان موجود) -->
   <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>
