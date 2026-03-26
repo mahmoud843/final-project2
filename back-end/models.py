@@ -4,12 +4,18 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+# ==========================================
+# جدول المتابعة Followers
+# ==========================================
 followers = db.Table(
     'followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
     db.Column('followed_id', db.Integer, db.ForeignKey('users.id'), primary_key=True)
 )
 
+# ==========================================
+# User
+# ==========================================
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
@@ -21,11 +27,9 @@ class User(UserMixin, db.Model):
     programming_level = db.Column(db.String(50))
     profile_image = db.Column(db.String(255), default='default-avatar.png')
     bio = db.Column(db.Text, default="I'm a PAD developer!")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # جديد
     points = db.Column(db.Integer, default=0)
     level = db.Column(db.Integer, default=1)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     posts = db.relationship('Post', backref='author', lazy=True, cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='author', lazy=True, cascade='all, delete-orphan')
@@ -41,6 +45,19 @@ class User(UserMixin, db.Model):
         lazy='dynamic'
     )
 
+    def update_level(self):
+        pts = self.points or 0
+        if pts >= 500:
+            self.level = 5
+        elif pts >= 300:
+            self.level = 4
+        elif pts >= 150:
+            self.level = 3
+        elif pts >= 50:
+            self.level = 2
+        else:
+            self.level = 1
+
     def follow(self, user):
         if not self.is_following(user):
             self.followed.append(user)
@@ -52,12 +69,12 @@ class User(UserMixin, db.Model):
     def is_following(self, user):
         return self.followed.filter(followers.c.followed_id == user.id).count() > 0
 
-    def update_level(self):
-        self.level = max(1, (self.points // 50) + 1)
-
     def __repr__(self):
         return f'<User {self.username}>'
 
+# ==========================================
+# Post
+# ==========================================
 class Post(db.Model):
     __tablename__ = 'posts'
 
@@ -78,6 +95,9 @@ class Post(db.Model):
     def __repr__(self):
         return f'<Post {self.title}>'
 
+# ==========================================
+# Comment
+# ==========================================
 class Comment(db.Model):
     __tablename__ = 'comments'
 
@@ -90,6 +110,9 @@ class Comment(db.Model):
     def __repr__(self):
         return f'<Comment {self.id}>'
 
+# ==========================================
+# Like
+# ==========================================
 class Like(db.Model):
     __tablename__ = 'likes'
 
@@ -105,6 +128,9 @@ class Like(db.Model):
     def __repr__(self):
         return f'<Like {self.id}>'
 
+# ==========================================
+# Todo
+# ==========================================
 class Todo(db.Model):
     __tablename__ = 'todos'
 
@@ -117,18 +143,17 @@ class Todo(db.Model):
     def __repr__(self):
         return f'<Todo {self.task_text}>'
 
-# جديد: جدول التحديات
+# ==========================================
+# Challenge
+# ==========================================
 class Challenge(db.Model):
     __tablename__ = 'challenges'
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    language = db.Column(db.String(50), nullable=False)  # python / web
-    difficulty = db.Column(db.String(50), nullable=False)  # beginner / intermediate
-    expected_output = db.Column(db.Text)
-    starter_code = db.Column(db.Text)
-    points = db.Column(db.Integer, default=10)
+    description = db.Column(db.Text)
+    difficulty = db.Column(db.String(50), default='easy')
+    points_reward = db.Column(db.Integer, default=10)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     submissions = db.relationship('ChallengeSubmission', backref='challenge', lazy=True, cascade='all, delete-orphan')
@@ -136,22 +161,20 @@ class Challenge(db.Model):
     def __repr__(self):
         return f'<Challenge {self.title}>'
 
-# جديد: حلول المستخدمين
+# ==========================================
+# ChallengeSubmission
+# ==========================================
 class ChallengeSubmission(db.Model):
     __tablename__ = 'challenge_submissions'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=False)
-    code = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    submitted_code = db.Column(db.Text)
     is_passed = db.Column(db.Boolean, default=False)
-    score = db.Column(db.Integer, default=0)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    __table_args__ = (
-        db.UniqueConstraint('user_id', 'challenge_id', name='unique_user_challenge'),
-    )
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f'<ChallengeSubmission user={self.user_id} challenge={self.challenge_id}>'
+        return f'<ChallengeSubmission {self.id}>'
+    
     
