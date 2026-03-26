@@ -35,6 +35,7 @@ class User(UserMixin, db.Model):
     comments = db.relationship('Comment', backref='author', lazy=True, cascade='all, delete-orphan')
     todos = db.relationship('Todo', backref='user', lazy=True, cascade='all, delete-orphan')
     challenge_submissions = db.relationship('ChallengeSubmission', backref='user', lazy=True, cascade='all, delete-orphan')
+    hosting_orders = db.relationship('HostingOrder', backref='user', lazy=True, cascade='all, delete-orphan')
 
     followed = db.relationship(
         'User',
@@ -181,3 +182,21 @@ class ChallengeSubmission(db.Model):
 
     def __repr__(self):
         return f'<ChallengeSubmission {self.id}>'
+
+# ==========================================
+# HostingOrder - جديد
+# ==========================================
+class HostingOrder(db.Model):
+    __tablename__ = 'hosting_orders'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    plan_name = db.Column(db.String(100), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    domain = db.Column(db.String(255), nullable=True)
+    status = db.Column(db.String(50), default='active')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    
+    def __repr__(self):
+        return f'<HostingOrder {self.plan_name} - {self.user_id}>'
