@@ -20,567 +20,569 @@
         {% endif %}
     {% endwith %}
 
-<div class="container">
-    
-    <nav>
-        <div class="navbar">
-            <div class="text-logo">
-                <img decoding="async" src="{{ url_for('static', filename='images/logo.png') }}" id="Dark-mode" alt="logo" onerror="this.src='https://via.placeholder.com/200x50?text=Monarmez'">
-            </div>
-            
-            <div class="sub-section">
-                <i class="fa-solid fa-home"></i>
-                <a href="{{ url_for('home_page') }}">Home</a>
-            </div>
-            
-            <div class="sub-section" id="clicked">
-                <i class="fa-solid fa-sun"></i>
-                <a href="#">Dark-mode</a>
-            </div>
-            
-            <div class="sub-section">
-                <i class="fa-regular fa-user"></i>
-                <a href="{{ url_for('profile') }}">Profile</a>
-            </div>
-            
-            <div class="sub-section">
-                <i class="fa-solid fa-server"></i>
-                <a href="{{ url_for('hosting_page') }}">Hosting</a>
-            </div>
+    <div class="container">
 
-            <div class="sub-section" id="communitiesSection">
-                <i class="fa-regular fa-comments"></i>
-                <a href="#" id="communitiesBtn">Communities</a>
-                <div class="languages-bar" id="languagesBar">
-                    <ul class="top-row">
-                        <li>HTML / CSS / JS</li>
-                    </ul>
-                    <ul class="bottom-row">
-                        <li>Python</li>
-                    </ul>
+        <nav>
+            <div class="navbar">
+                <div class="text-logo">
+                    <img decoding="async"
+                         src="{{ url_for('static', filename='images/logo.png') }}"
+                         alt="logo"
+                         onerror="this.src='https://via.placeholder.com/200x50?text=Monarmez'">
+                </div>
+
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                <div class="sub-section">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
+                </div>
+                {% endif %}
+
+                <div class="sub-section">
+                    <i class="fa-solid fa-home"></i>
+                    <a href="{{ url_for('home_page') }}">Home</a>
+                </div>
+
+                <div class="sub-section" id="communitiesSection">
+                    <i class="fa-regular fa-comments"></i>
+                    <a href="#" id="communitiesBtn">Communities</a>
+                    <div class="languages-bar" id="languagesBar">
+                        <ul class="top-row">
+                            <li><a href="{{ url_for('home_page') }}">HTML / CSS / JS</a></li>
+                        </ul>
+                        <ul class="bottom-row">
+                            <li><a href="{{ url_for('python_community_page') }}">Python</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="sub-section" id="clicked">
+                    <i class="fa-solid fa-sun"></i>
+                    <a href="#">Dark Mode</a>
+                </div>
+
+                <div class="sub-section">
+                    <i class="fa-regular fa-user"></i>
+                    <a href="{{ url_for('profile') }}">Profile</a>
+                </div>
+
+                <div class="sub-section">
+                    <i class="fa-solid fa-server"></i>
+                    <a href="{{ url_for('hosting_page') }}">Hosting</a>
+                </div>
+
+                <div class="sub-section" id="hidden2">
+                    <i class="fa-sharp fa-solid fa-laptop"></i>
+                    <a href="{{ url_for('codelab_page') }}" target="_self">Code Lab</a>
+                </div>
+
+                <div class="sub-section">
+                    <i class="fa-solid fa-shop"></i>
+                    <a href="{{ url_for('shop_page') }}">Shop</a>
+                </div>
+
+                <div class="sub-section">
+                    <i class="fa-solid fa-robot"></i>
+                    <a href="{{ url_for('ai_page') }}">AI Chatbot</a>
                 </div>
             </div>
-            
-            <div class="sub-section" id="hidden2">
-                <i class="fa-sharp fa-solid fa-laptop"></i>
-                <a href="{{ url_for('codelab_page') }}" target="_self">Code Lab</a>
-            </div>
-            
-            <div class="sub-section">
-                <i class="fa-solid fa-shop"></i>
-                <a href="{{ url_for('shop_page') }}">Shop</a>
-            </div>
-            
-            <div class="sub-section">
-                <i class="fa-solid fa-robot"></i>
-                <a href="{{ url_for('ai_page') }}">Ai Chatbot</a>
-            </div>
-         
-        </div>            
-    </nav>
+        </nav>
 
-    <section class="middle-section">
+        <section class="middle-section">
 
-        <a href="{{ url_for('create_project_page') }}" style="text-decoration: none; color: inherit; display: block;">
-            <div class="create-post-container">
-                <div class="create-post-card">
-                    <div class="create-post-header">
-                        <img src="{{ url_for('static', filename='images/sia.jpeg') }}" alt="avatar" class="create-post-avatar" onerror="this.src='https://via.placeholder.com/40'">
-                        <div class="create-post-input-wrapper">
-                            <span class="create-post-placeholder">
-                                {% if session.username %}What's on your mind, {{ session.username }}?{% else %}What's on your mind?{% endif %}
-                            </span>
-                        </div>
-                        <div class="create-post-icon">
-                            <i class="fa-solid fa-images"></i>
+            <a href="{{ url_for('create_project_page') }}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="create-post-container">
+                    <div class="create-post-card">
+                        <div class="create-post-header">
+                            <img src="{{ url_for('static', filename='images/sia.jpeg') }}"
+                                 alt="avatar"
+                                 class="create-post-avatar"
+                                 onerror="this.src='https://via.placeholder.com/40'">
+
+                            <div class="create-post-input-wrapper">
+                                <span class="create-post-placeholder">
+                                    {% if session.username %}
+                                        What's on your mind, {{ session.username }}?
+                                    {% else %}
+                                        What's on your mind?
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <div class="create-post-icon">
+                                <i class="fa-solid fa-images"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </a>
+            </a>
 
-        <div class="post-area" id="posts-area">
-            {% if posts %}
-                {% for post in posts %}
-                <div class="post-main" data-post-id="{{ post.id }}" data-post-type="{{ post.post_type }}">
+            <div class="post-area" id="posts-area">
+
+                {% if posts %}
+                    {% for post in posts %}
+                    <div class="post-main" data-post-id="{{ post.id }}" data-post-type="{{ post.post_type }}">
+                        <div class="post-header">
+                            <div class="post-left-header">
+                                <div class="post-image">
+                                    <img decoding="async"
+                                         src="{{ url_for('static', filename='images/' + post.author.profile_image) }}"
+                                         alt=""
+                                         onerror="this.src='https://via.placeholder.com/40'">
+                                </div>
+                                <p class="post-username">{{ post.author.username }}</p>
+                                <span class="one-day"> . {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                {% if session.user_id == post.user_id or current_user.role == 'admin' %}
+                                <i class="fa-solid fa-trash delete-btn"
+                                   style="color: #ef4444; cursor: pointer; transition: 0.3s;"
+                                   title="Delete Post"
+                                   data-post-id="{{ post.id }}"
+                                   onmouseover="this.style.transform='scale(1.2)'"
+                                   onmouseout="this.style.transform='scale(1)'"></i>
+                                {% endif %}
+                                <i class="fa-solid fa-grip-lines"></i>
+                            </div>
+                        </div>
+
+                        <div class="post-main-image">
+                            {% if post.post_type == 'question' %}
+                                <h3>{{ post.title }}</h3>
+                                <p>{{ post.description }}</p>
+
+                                {% if post.code_content %}
+                                <pre style="background: #1e1e1e; padding: 10px; border-radius: 5px; overflow-x: auto;"><code>{{ post.code_content }}</code></pre>
+                                {% endif %}
+
+                                {% if post.programming_language %}
+                                <small style="color: #888;">Language: {{ post.programming_language }}</small>
+                                {% endif %}
+
+                            {% elif post.post_type == 'project' or post.post_type == 'code' %}
+                                <h3>{{ post.title or 'Untitled Project' }}</h3>
+                                <p>{{ post.description or 'No description' }}</p>
+
+                                {% if post.code_content %}
+                                <pre style="background: #1e1e1e; padding: 10px; border-radius: 5px; overflow-x: auto;"><code>{{ post.code_content }}</code></pre>
+                                {% endif %}
+
+                                {% if post.css_content %}
+                                <pre style="background: #0f172a; padding: 10px; border-radius: 5px; overflow-x: auto; margin-top: 10px;"><code>{{ post.css_content }}</code></pre>
+                                {% endif %}
+
+                                {% if post.js_content %}
+                                <pre style="background: #111827; padding: 10px; border-radius: 5px; overflow-x: auto; margin-top: 10px;"><code>{{ post.js_content }}</code></pre>
+                                {% endif %}
+
+                                {% if post.programming_language %}
+                                <small style="color: #888;">Language: {{ post.programming_language }}</small>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+
+                        <div class="post-fotter">
+                            <div class="post-fotter-left">
+                                <i class="fa-sharp-duotone fa-solid fa-star like-btn {% if current_user.id in post.likes|map(attribute='user_id')|list %}liked{% endif %}"
+                                   onclick="toggleLike({{ post.id }}, this)"></i>
+                                <span class="likes-count" id="likes-{{ post.id }}">{{ post.likes|length }}</span>
+
+                                <i class="fa-sharp-duotone fa-solid fa-comments"
+                                   onclick="focusComment({{ post.id }})"></i>
+                                <span class="comments-count" id="comments-count-{{ post.id }}">{{ post.comments|length }}</span>
+
+                                <i class="fa-sharp-duotone fa-solid fa-share"></i>
+                            </div>
+                        </div>
+
+                        <div class="post-description">
+                            <p class="post-liked">
+                                liked by <span id="likes-text-{{ post.id }}">{{ post.likes|length }} people</span>
+                            </p>
+
+                            <div class="comments-section">
+                                <div class="comments-list" id="comments-{{ post.id }}">
+                                    {% for comment in post.comments[-3:] %}
+                                    <div class="comment-item" id="comment-{{ comment.id }}">
+                                        <span>{{ comment.author.username }}:</span> {{ comment.comment_text }}
+                                        <small style="color: #888; font-size: 10px; margin-right: 10px;">
+                                            {{ comment.created_at.strftime('%H:%M') }}
+                                        </small>
+                                    </div>
+                                    {% else %}
+                                    <div class="no-comments" style="color: #888; text-align: center; padding: 5px;">
+                                        No comments yet. Be the first to comment!
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                {% if post.comments|length > 3 %}
+                                <button class="load-more-btn"
+                                        data-post-id="{{ post.id }}"
+                                        onclick="loadMoreComments(this)">
+                                    View all {{ post.comments|length }} comments
+                                </button>
+                                {% endif %}
+
+                                <div class="comment-input-group">
+                                    <input type="text"
+                                           id="comment-{{ post.id }}"
+                                           placeholder="Write a comment..."
+                                           onkeypress="if(event.key==='Enter') addComment({{ post.id }})">
+                                    <button onclick="addComment({{ post.id }})">
+                                        <i class="fa-solid fa-paper-plane"></i> Post
+                                    </button>
+                                </div>
+
+                                <div class="comment-success" id="success-{{ post.id }}">✓ Comment added!</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="post-main">
+                        <div class="post-header">
+                            <p style="text-align: center; color: #888; padding: 20px;">
+                                No posts yet. Be the first to create one!
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- المنشور الأول (To Do List) -->
+                <div class="post-main">
                     <div class="post-header">
                         <div class="post-left-header">
                             <div class="post-image">
-                                <img decoding="async" src="{{ url_for('static', filename='images/' + post.author.profile_image) }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
+                                <img decoding="async" src="{{ url_for('static', filename='images/sia.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
                             </div>
-                            <p class="post-username">{{ post.author.username }}</p>
-                            <span class="one-day"> . {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            <p class="post-username">sia</p>
+                            <span class="one-day"> . 1h </span>
                         </div>
                         <i class="fa-solid fa-grip-lines"></i>
                     </div>
-                    
                     <div class="post-main-image">
-                        {% if post.post_type == 'question' %}
-                            <h3>{{ post.title }}</h3>
-                            <p>{{ post.description }}</p>
-                            {% if post.code_content %}
-                            <pre style="background: #1e1e1e; padding: 10px; border-radius: 5px; overflow-x: auto;"><code>{{ post.code_content }}</code></pre>
-                            {% endif %}
-                            {% if post.programming_language %}
-                            <small style="color: #888;">Language: {{ post.programming_language }}</small>
-                            {% endif %}
-                        
-                        {% elif post.post_type == 'project' or post.post_type == 'code' %}
-                            <h3>{{ post.title or 'Untitled Project' }}</h3>
-                            <p>{{ post.description or 'No description' }}</p>
-                            {% if post.code_content %}
-                            <pre style="background: #1e1e1e; padding: 10px; border-radius: 5px; overflow-x: auto;"><code>{{ post.code_content }}</code></pre>
-                            {% endif %}
-                        {% endif %}
+                        <div id="myDIV" class="header">
+                            <h2>Do your own List</h2>
+                            <input type="text" id="myInput" placeholder="Title...">
+                            <span onclick="newElement()" class="addBtn">Add</span>
+                        </div>
+                        <ul id="myUL"></ul>
                     </div>
-                    
                     <div class="post-fotter">
-                        <div class="post-fotter-left">
-                            <i class="fa-sharp-duotone fa-solid fa-star like-btn {% if current_user.id in post.likes|map(attribute='user_id')|list %}liked{% endif %}" 
-                               onclick="toggleLike({ postid }, this)"></i>
-                            <span class="likes-count" id="likes-{{ post.id }}">{{ post.likes|length }}</span>
-                            <i class="fa-sharp-duotone fa-solid fa-comments" onclick="focusComment({ postid })"></i>
-                            <span class="comments-count" id="comments-count-{{ post.id }}">{{ post.comments|length }}</span>
-                            <i class="fa-sharp-duotone fa-solid fa-share"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="post-description">
-                        <p class="post-liked">liked by <span id="likes-text-{{ post.id }}">{{ post.likes|length }} people</span></p>
-                        
-                        <div class="comments-section">
-                            <div class="comments-list" id="comments-{{ post.id }}">
-                                {% for comment in post.comments[-3:] %}
-                                <div class="comment-item" id="comment-{{ comment.id }}">
-                                    <span>{{ comment.author.username }}:</span> {{ comment.comment_text }}
-                                    <small style="color: #888; font-size: 10px; margin-right: 10px;">{{ comment.created_at.strftime('%H:%M') }}</small>
-                                </div>
-                                {% else %}
-                                <div class="no-comments" style="color: #888; text-align: center; padding: 5px;">
-                                    No comments yet. Be the first to comment!
-                                </div>
-                                {% endfor %}
-                            </div>
-                            
-                            {% if post.comments|length > 3 %}
-                            <button class="load-more-btn" data-post-id="{{ post.id }}" onclick="loadMoreComments(this)">
-                                View all {{ post.comments|length }} comments
-                            </button>
-                            {% endif %}
-                            
-                            <div class="comment-input-group">
-                                <input type="text" 
-                                       id="comment-{{ post.id }}" 
-                                       placeholder="Write a comment..." 
-                                       onkeypress="if(event.key==='Enter') addComment({ postid })">
-                                <button onclick="addComment({ postid })">
-                                    <i class="fa-solid fa-paper-plane"></i> Post
-                                </button>
-                            </div>
-                            <div class="comment-success" id="success-{{ post.id }}">✓ Comment added!</div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="post-main">
-                    <div class="post-header">
-                        <p style="text-align: center; color: #888; padding: 20px;">No posts yet. Be the first to create one!</p>
-                    </div>
-                </div>
-            {% endif %}
-
-            {% if posts %}
-                {% for post in posts %}
-                <div class="post-main" style="border: 1px solid rgba(27,116,228,0.5); box-shadow: 0 5px 15px rgba(27,116,228,0.1); position: relative;">
-                    <div class="post-header">
-                        <div class="post-left-header">
-                            <div class="post-image">
-                                <img src="{{ url_for('static', filename='images/' + (post.profile_image if post.profile_image else 'default-avatar.png')) }}" alt="avatar" onerror="this.src='/static/images/default-avatar.png'">
-                            </div>
-                            <p class="post-username">{{ post.username }} <span class="one-day" style="font-size: 11px;"> . Just now</span></p>
-                        </div>
-                        
-                        <div style="display: flex; gap: 15px; align-items: center;">
-                            {% if session.user_id == post.user_id %}
-                            <i class="fa-solid fa-trash delete-btn" style="color: #ef4444; cursor: pointer; transition: 0.3s;" title="مسح المنشور نهائياً" data-post-id="{{ post.id }}" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></i>
-                            {% endif %}
-                            <i class="fa-solid fa-grip-lines" style="color: var(--text-muted);"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="post-main-image" style="padding: 0 20px 10px;">
-                        <h3 style="color: #6ce5ff; margin-bottom: 5px; font-size: 18px;">{{ post.title }}</h3>
-                        <p style="color: #eaf0ff; line-height: 1.6; margin-bottom: 15px; font-size: 14px;">{{ post.description }}</p>
-                        
-                        {% if post.code_content or post.html_content %}
-                        <div style="background: #070b17; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; overflow-x: auto;">
-                            <div style="margin-bottom: 10px; color: #8fa5de; font-size: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
-                                <i class="fa-solid fa-code" style="color: #fbbf24;"></i> {{ post.programming_language | upper }} Snippet
-                            </div>
-                            <pre style="color: #40ffb0; margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 13px; direction: ltr; text-align: left;">{% if post.post_type == 'question' %}{{ post.code_content }}{% else %}{{ post.html_content }}{% endif %}</pre>
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="post-fotter" style="padding-top: 5px;">
                         <div class="post-fotter-left">
                             <i class="fa-sharp-duotone fa-solid fa-star"></i>
                             <i class="fa-sharp-duotone fa-solid fa-comments"></i>
                             <i class="fa-sharp-duotone fa-solid fa-share"></i>
                         </div>
                     </div>
-                    
                     <div class="post-description">
-                        <p class="post-liked">Be the first to like this</p>
+                        <p class="post-liked">liked by Ahmed and others</p>
+                        <p class="title"><span>Mohamed</span> good work</p>
+                        <p class="comments">See all comments</p>
                         <div class="comment-section">
-                            <ul id="commentList-{{ post.id }}"></ul>
+                            <ul id="commentList"></ul>
                             <div class="input2-container">
-                                <input type="text" class="input2" id="commentInput-{{ post.id }}" placeholder="Add a comment...">
-                                <button onclick="addCommentMultiple('commentInput-{{ post.id }}', 'commentList-{{ post.id }}')">Post</button>
+                                <input type="text" class="input2" id="commentInput" placeholder="Add a comment...">
+                                <button onclick="addCommentSimple()">Post</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
-            {% endif %}
 
-            <!-- المنشور الأول (To Do List) -->
-            <div class="post-main">
-                <div class="post-header">
-                    <div class="post-left-header">
-                        <div class="post-image">
-                            <img decoding="async" src="{{ url_for('static', filename='images/sia.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
+                <!-- المنشور الثاني (Snake Game) -->
+                <div class="post-main">
+                    <div class="post-header">
+                        <div class="post-left-header">
+                            <div class="post-image">
+                                <img decoding="async" src="{{ url_for('static', filename='images/img4.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
+                            </div>
+                            <p class="post-username">eyad</p>
+                            <span class="one-day"> . 1d </span>
                         </div>
-                        <p class="post-username">sia</p>
-                        <span class="one-day"> . 1h </span>
+                        <i class="fa-solid fa-grip-lines"></i>
                     </div>
-                    <i class="fa-solid fa-grip-lines"></i>
-                </div>
-                <div class="post-main-image">
-                    <div id="myDIV" class="header">
-                        <h2>Do your own List</h2>
-                        <input type="text" id="myInput" placeholder="Title...">
-                        <span onclick="newElement()" class="addBtn">Add</span>
-                    </div>
-                    <ul id="myUL"></ul>
-                </div>
-                <div class="post-fotter">
-                    <div class="post-fotter-left">
-                        <i class="fa-sharp-duotone fa-solid fa-star"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-comments"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-share"></i>
-                    </div>
-                </div>
-                <div class="post-description">
-                    <p class="post-liked">liked by Ahmed and others</p>
-                    <p class="title"><span>Mohamed</span> good work</p>
-                    <p class="comments">See all comments</p>
-                    <div class="comment-section">
-                        <ul id="commentList"></ul>
-                        <div class="input2-container">
-                            <input type="text" class="input2" id="commentInput" placeholder="Add a comment...">
-                            <button onclick="addCommentSimple()">Post</button>
+                    <div class="post-main-image">
+                        <div class="body">
+                            <div class="background">
+                                <div id="scoreBox">Score: 0</div>
+                                <div id="hiscoreBox">HighScore: 0</div>
+                                <div id="board-1"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- المنشور الثاني (Snake Game) -->
-            <div class="post-main">
-                <div class="post-header">
-                    <div class="post-left-header">
-                        <div class="post-image">
-                            <img decoding="async" src="{{ url_for('static', filename='images/img4.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
-                        </div>
-                        <p class="post-username">eyad</p>
-                        <span class="one-day"> . 1d </span>
-                    </div>
-                    <i class="fa-solid fa-grip-lines"></i>
-                </div>
-                <div class="post-main-image">
-                    <div class="body">
-                        <div class="background">
-                            <div id="scoreBox">Score: 0</div>
-                            <div id="hiscoreBox">HighScore: 0</div>
-                            <div id="board-1"></div>
+                    <div class="post-fotter">
+                        <div class="post-fotter-left">
+                            <i class="fa-sharp-duotone fa-solid fa-star"></i>
+                            <i class="fa-sharp-duotone fa-solid fa-comments"></i>
+                            <i class="fa-sharp-duotone fa-solid fa-share"></i>
                         </div>
                     </div>
-                </div>
-                <div class="post-fotter">
-                    <div class="post-fotter-left">
-                        <i class="fa-sharp-duotone fa-solid fa-star"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-comments"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-share"></i>
-                    </div>
-                </div>
-                <div class="post-description">
-                    <p class="post-liked">liked by mo and other</p>
-                    <p class="title"><span>mo</span> good game can you turn the color of the snake into red</p>
-                    <p class="comments">view all</p>
-                    <div class="comment-section">
-                        <ul id="commentList2"></ul>
-                        <div class="input2-container">
-                            <input type="text" class="input2" id="commentInput2" placeholder="Add a comment...">
-                            <button onclick="addComment2()">Post</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- المنشور الثالث -->
-            <div class="post-main">
-                <div class="post-header">
-                    <div class="post-left-header">
-                        <div class="post-image">
-                            <img decoding="async" src="{{ url_for('static', filename='images/img3.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
-                        </div>
-                        <p class="post-username">mohamed</p>
-                        <span class="one-day"> . 5h </span>
-                    </div>
-                </div>
-                <div class="post-main-image">
-                    <h3 style="padding: 20px;">Where can I learn JavaScript here?</h3>
-                </div>
-                <div class="post-fotter">
-                    <div class="post-fotter-left">
-                        <i class="fa-sharp-duotone fa-solid fa-star"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-comments"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-share"></i>
-                    </div>
-                </div>
-                <div class="post-description">
-                    <p class="post-liked">liked by mahmoud and other</p>
-                    <p class="title"><span>mahmoud</span> go to the code lab and select JavaScript </p>
-                    <p class="comments">view all</p>
-                    <div class="comment-section">
-                        <ul id="commentList3"></ul>
-                        <div class="input2-container">
-                            <input type="text" class="input2" id="commentInput3" placeholder="Add a comment...">
-                            <button onclick="addComment3()">Post</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- المنشور الرابع (Rock Paper Scissors) -->
-            <div class="post-main">
-                <div class="post-header">
-                    <div class="post-left-header">
-                        <div class="post-image">
-                            <img decoding="async" src="{{ url_for('static', filename='images/img1.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
-                        </div>
-                        <p class="post-username">holland</p>
-                        <span class="one-day"> . 5d </span>
-                    </div>
-                    <i class="fa-solid fa-grip-lines"></i>
-                </div>
-                <div class="post-main-image">
-                    <div class="rock-game">
-                        <h1 class="title-3">Rock Paper Scissors Game</h1>
-                        <div class="computer">
-                            <h2>Play against the computer</h2>
-                            <button onclick="playAgainstComputer('rock')"><i class="far fa-hand-rock"></i></button>
-                            <button onclick="playAgainstComputer('paper')"><i class="far fa-hand-paper"></i></button>
-                            <button onclick="playAgainstComputer('scissors')"><i class="far fa-hand-scissors"></i></button>
-                            <p id="computer-choice"></p>
-                            <h2 id="result"></h2>
-                        </div>
-                        <div class="friends">
-                            <div class="player-1">
-                                <h2>Play with a friend</h2>
-                                <div class="player1">
-                                    <h2>player 1</h2>
-                                    <button onclick="playWithFriend('rock', 'player1')"><i class="far fa-hand-rock"></i></button>
-                                    <button onclick="playWithFriend('paper', 'player1')"><i class="far fa-hand-paper"></i></button>
-                                    <button onclick="playWithFriend('scissors', 'player1')"><i class="far fa-hand-scissors"></i></button>
-                                </div>
-                                <div class="player2">
-                                    <h2>player 2</h2>
-                                    <button onclick="playWithFriend('rock', 'player2')"><i class="far fa-hand-rock"></i></button>
-                                    <button onclick="playWithFriend('paper', 'player2')"><i class="far fa-hand-paper"></i></button>
-                                    <button onclick="playWithFriend('scissors', 'player2')"><i class="far fa-hand-scissors"></i></button>
-                                </div>
-                                <p id="player1-choice"></p>
-                                <p id="player2-choice"></p>
-                                <h2 id="result2"></h2>
+                    <div class="post-description">
+                        <p class="post-liked">liked by mo and other</p>
+                        <p class="title"><span>mo</span> good game can you turn the color of the snake into red</p>
+                        <p class="comments">view all</p>
+                        <div class="comment-section">
+                            <ul id="commentList2"></ul>
+                            <div class="input2-container">
+                                <input type="text" class="input2" id="commentInput2" placeholder="Add a comment...">
+                                <button onclick="addComment2()">Post</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="post-fotter">
-                    <div class="post-fotter-left">
-                        <i class="fa-sharp-duotone fa-solid fa-star"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-comments"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-share"></i>
-                    </div>
-                </div>
-                <div class="post-description">
-                    <p class="post-liked">liked by ahmed and other</p>
-                    <p class="title"><span>ahmed</span> congratulation, on your first game<br></p>
-                    <p class="comments">view all</p>
-                    <div class="comment-section">
-                        <ul id="commentList4"></ul>
-                        <div class="input2-container">
-                            <input type="text" class="input2" id="commentInput4" placeholder="Add a comment...">
-                            <button onclick="addComment4()">Post</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- المنشور الخامس (X O) -->
-            <div class="post-main">
-                <div class="post-header">
-                    <div class="post-left-header">
-                        <div class="post-image">
-                            <img decoding="async" src="{{ url_for('static', filename='images/john.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
+                <!-- المنشور الثالث -->
+                <div class="post-main">
+                    <div class="post-header">
+                        <div class="post-left-header">
+                            <div class="post-image">
+                                <img decoding="async" src="{{ url_for('static', filename='images/img3.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
+                            </div>
+                            <p class="post-username">mohamed</p>
+                            <span class="one-day"> . 5h </span>
                         </div>
-                        <p class="post-username">john</p>
-                        <span class="one-day"> . 1w </span>
                     </div>
-                    <i class="fa-solid fa-grip-lines"></i>
-                </div>
-                <div class="post-main-image">
-                    <div class="xgame">
-                        <div class="board-2" onclick="handleMove(event)">
-                            <div class="cell" data-index="0"></div>
-                            <div class="cell" data-index="1"></div>
-                            <div class="cell" data-index="2"></div>
-                            <div class="cell" data-index="3"></div>
-                            <div class="cell" data-index="4"></div>
-                            <div class="cell" data-index="5"></div>
-                            <div class="cell" data-index="6"></div>
-                            <div class="cell" data-index="7"></div>
-                            <div class="cell" data-index="8"></div>
+                    <div class="post-main-image">
+                        <h3 style="padding: 20px;">Where can I learn JavaScript here?</h3>
+                    </div>
+                    <div class="post-fotter">
+                        <div class="post-fotter-left">
+                            <i class="fa-sharp-duotone fa-solid fa-star"></i>
+                            <i class="fa-sharp-duotone fa-solid fa-comments"></i>
+                            <i class="fa-sharp-duotone fa-solid fa-share"></i>
                         </div>
-                        <p id="result-xo"></p>
-                        <button class="game--restart">Restart Game</button>
                     </div>
-                </div>
-                <div class="post-fotter">
-                    <div class="post-fotter-left">
-                        <i class="fa-sharp-duotone fa-solid fa-star"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-comments"></i>
-                        <i class="fa-sharp-duotone fa-solid fa-share"></i>
-                    </div>
-                </div>
-                <div class="post-description">
-                    <p class="post-liked">liked by ahmed and other</p>
-                    <p class="title"><span>ahmed</span> good game<br></p>
-                    <p class="comments">view all</p>
-                    <div class="comment-section">
-                        <ul id="commentList5"></ul>
-                        <div class="input2-container">
-                            <input type="text" class="input2" id="commentInput5" placeholder="Add a comment...">
-                            <button onclick="addComment5()">Post</button>
+                    <div class="post-description">
+                        <p class="post-liked">liked by mahmoud and other</p>
+                        <p class="title"><span>mahmoud</span> go to the code lab and select JavaScript </p>
+                        <p class="comments">view all</p>
+                        <div class="comment-section">
+                            <ul id="commentList3"></ul>
+                            <div class="input2-container">
+                                <input type="text" class="input2" id="commentInput3" placeholder="Add a comment...">
+                                <button onclick="addComment3()">Post</button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- المنشور الرابع (Rock Paper Scissors) -->
+                <div class="post-main">
+                    <div class="post-header">
+                        <div class="post-left-header">
+                            <div class="post-image">
+                                <img decoding="async" src="{{ url_for('static', filename='images/img1.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
+                            </div>
+                            <p class="post-username">holland</p>
+                            <span class="one-day"> . 5d </span>
+                        </div>
+                        <i class="fa-solid fa-grip-lines"></i>
+                    </div>
+                    <div class="post-main-image">
+                        <div class="rock-game">
+                            <h1 class="title-3">Rock Paper Scissors Game</h1>
+                            <div class="computer">
+                                <h2>Play against the computer</h2>
+                                <button onclick="playAgainstComputer('rock')"><i class="far fa-hand-rock"></i></button>
+                                <button onclick="playAgainstComputer('paper')"><i class="far fa-hand-paper"></i></button>
+                                <button onclick="playAgainstComputer('scissors')"><i class="far fa-hand-scissors"></i></button>
+                                <p id="computer-choice"></p>
+                                <h2 id="result"></h2>
+                            </div>
+                            <div class="friends">
+                                <div class="player-1">
+                                    <h2>Play with a friend</h2>
+                                    <div class="player1">
+                                        <h2>player 1</h2>
+                                        <button onclick="playWithFriend('rock', 'player1')"><i class="far fa-hand-rock"></i></button>
+                                        <button onclick="playWithFriend('paper', 'player1')"><i class="far fa-hand-paper"></i></button>
+                                        <button onclick="playWithFriend('scissors', 'player1')"><i class="far fa-hand-scissors"></i></button>
+                                    </div>
+                                    <div class="player2">
+                                        <h2>player 2</h2>
+                                        <button onclick="playWithFriend('rock', 'player2')"><i class="far fa-hand-rock"></i></button>
+                                        <button onclick="playWithFriend('paper', 'player2')"><i class="far fa-hand-paper"></i></button>
+                                        <button onclick="playWithFriend('scissors', 'player2')"><i class="far fa-hand-scissors"></i></button>
+                                    </div>
+                                    <p id="player1-choice"></p>
+                                    <p id="player2-choice"></p>
+                                    <h2 id="result2"></h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="post-fotter">
+                        <div class="post-fotter-left">
+                            <i class="fa-sharp-duotone fa-solid fa-star"></i>
+                            <i class="fa-sharp-duotone fa-solid fa-comments"></i>
+                            <i class="fa-sharp-duotone fa-solid fa-share"></i>
+                        </div>
+                    </div>
+                    <div class="post-description">
+                        <p class="post-liked">liked by ahmed and other</p>
+                        <p class="title"><span>ahmed</span> congratulation, on your first game<br></p>
+                        <p class="comments">view all</p>
+                        <div class="comment-section">
+                            <ul id="commentList4"></ul>
+                            <div class="input2-container">
+                                <input type="text" class="input2" id="commentInput4" placeholder="Add a comment...">
+                                <button onclick="addComment4()">Post</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- المنشور الخامس (X O) -->
+                <div class="post-main">
+                    <div class="post-header">
+                        <div class="post-left-header">
+                            <div class="post-image">
+                                <img decoding="async" src="{{ url_for('static', filename='images/john.jpeg') }}" alt="" onerror="this.src='/static/images/default-avatar.png'">
+                            </div>
+                            <p class="post-username">john</p>
+                            <span class="one-day"> . 1w </span>
+                        </div>
+                        <i class="fa-solid fa-grip-lines"></i>
+                    </div>
+                    <div class="post-main-image">
+                        <div class="xgame">
+                            <div class="board-2" onclick="handleMove(event)">
+                                <div class="cell" data-index="0"></div>
+                                <div class="cell" data-index="1"></div>
+                                <div class="cell" data-index="2"></div>
+                                <div class="cell" data-index="3"></div>
+                                <div class="cell" data-index="4"></div>
+                                <div class="cell" data-index="5"></div>
+                                <div class="cell" data-index="6"></div>
+                                <div class="cell" data-index="7"></div>
+                                <div class="cell" data-index="8"></div>
+                            </div>
+                            <p id="result-xo"></p>
+                            <button class="game--restart">Restart Game</button>
+                        </div>
+                    </div>
+                    <div class="post-fotter">
+                        <div class="post-fotter-left">
+                            <i class="fa-sharp-duotone fa-solid fa-star"></i>
+                            <i class="fa-sharp-duotone fa-solid fa-comments"></i>
+                            <i class="fa-sharp-duotone fa-solid fa-share"></i>
+                        </div>
+                    </div>
+                    <div class="post-description">
+                        <p class="post-liked">liked by ahmed and other</p>
+                        <p class="title"><span>ahmed</span> good game<br></p>
+                        <p class="comments">view all</p>
+                        <div class="comment-section">
+                            <ul id="commentList5"></ul>
+                            <div class="input2-container">
+                                <input type="text" class="input2" id="commentInput5" placeholder="Add a comment...">
+                                <button onclick="addComment5()">Post</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- القسم الجانبي الأيمن -->
+        <div class="container-2">
+            <div class="follow-section">
+
+                {% if session.username %}
+                <div class="profile-follow profile-foolow-hovering">
+                    <div class="profile-follow-left">
+                        <div class="profile-follow-image">
+                            <img decoding="async" src="{{ url_for('static', filename='images/' + current_user.profile_image) }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
+                        </div>
+                        <div class="profile-follow-content">
+                            <p class="profile-id">{{ session.username }}</p>
+                            <p class="profile-name">online</p>
+                        </div>
+                    </div>
+                    <span class="clickable follow-btn" onclick="navigateToProfile()">My Profile</span>
+                </div>
+                {% endif %}
+
+                <div class="suggestion-follow">
+                    <p class="suggestion">suggestion</p>
+                    <a href="#" class="see-all">All</a>
+                </div>
+
+                <div class="profile-follow profile-foolow-hovering">
+                    <div class="profile-follow-left">
+                        <div class="profile-follow-image">
+                            <img decoding="async" src="{{ url_for('static', filename='images/img2.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
+                        </div>
+                        <div class="profile-follow-content">
+                            <p class="profile-id">Amr Tarek</p>
+                            <p class="profile-name">friend</p>
+                        </div>
+                    </div>
+                    <span class="clickable follow-btn">Follow</span>
+                </div>
+
+                <div class="profile-follow profile-foolow-hovering">
+                    <div class="profile-follow-left">
+                        <div class="profile-follow-image">
+                            <img decoding="async" src="{{ url_for('static', filename='images/john.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
+                        </div>
+                        <div class="profile-follow-content">
+                            <p class="profile-id">Omar Khaled</p>
+                            <p class="profile-name">new</p>
+                        </div>
+                    </div>
+                    <span class="clickable follow-btn">Follow</span>
+                </div>
+
+                <div class="profile-follow profile-foolow-hovering">
+                    <div class="profile-follow-left">
+                        <div class="profile-follow-image">
+                            <img decoding="async" src="{{ url_for('static', filename='images/mahmoud_saleh.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
+                        </div>
+                        <div class="profile-follow-content">
+                            <p class="profile-id">Mahmoud Saleh</p>
+                            <p class="profile-name">new</p>
+                        </div>
+                    </div>
+                    <span class="clickable follow-btn">Follow</span>
+                </div>
+
+                <div class="profile-follow profile-foolow-hovering">
+                    <div class="profile-follow-left">
+                        <div class="profile-follow-image">
+                            <img decoding="async" src="{{ url_for('static', filename='images/ahmed.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
+                        </div>
+                        <div class="profile-follow-content">
+                            <p class="profile-id">Youssef Ali</p>
+                            <p class="profile-name">new</p>
+                        </div>
+                    </div>
+                    <span class="clickable follow-btn">Follow</span>
+                </div>
+
+                <div class="profile-follow profile-foolow-hovering">
+                    <div class="profile-follow-left">
+                        <div class="profile-follow-image">
+                            <img decoding="async" src="{{ url_for('static', filename='images/ali.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
+                        </div>
+                        <div class="profile-follow-content">
+                            <p class="profile-id">Kareem Nabil</p>
+                            <p class="profile-name">new</p>
+                        </div>
+                    </div>
+                    <span class="clickable follow-btn">Follow</span>
+                </div>
+
+                <p class="copyrights">@All rights reserved by PAD</p>
             </div>
         </div>
-    </section>
 
-    <!-- القسم الجانبي الأيمن -->
-    <div class="container-2">
-        <div class="follow-section">
-            
-            {% if session.username %}
-            <div class="profile-follow profile-foolow-hovering">
-                <div class="profile-follow-left">
-                    <div class="profile-follow-image">
-                        <img decoding="async" src="{{ url_for('static', filename='images/' + current_user.profile_image) }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
-                    </div>
-                    <div class="profile-follow-content">
-                        <p class="profile-id">{{ session.username }}</p>
-                        <p class="profile-name">online</p>
-                    </div>
-                </div>
-                <span class="clickable follow-btn" onclick="navigateToProfile()">My Profile</span>
-            </div>
-            {% endif %}
-
-            <div class="suggestion-follow">
-                <p class="suggestion">suggestion</p>
-                <a href="#" class="see-all">All</a>
-            </div>
-
-            <!-- الشخص الأول -->
-            <div class="profile-follow profile-foolow-hovering">
-                <div class="profile-follow-left">
-                    <div class="profile-follow-image">
-                        <img decoding="async" src="{{ url_for('static', filename='images/img2.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
-                    </div>
-                    <div class="profile-follow-content">
-                        <p class="profile-id">Amr Tarek</p>
-                        <p class="profile-name">friend</p>
-                    </div>
-                </div>
-                <span class="clickable follow-btn">Follow</span>
-            </div>
-            
-            <!-- الشخص الثاني -->
-            <div class="profile-follow profile-foolow-hovering">
-                <div class="profile-follow-left">
-                    <div class="profile-follow-image">
-                        <img decoding="async" src="{{ url_for('static', filename='images/john.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
-                    </div>
-                    <div class="profile-follow-content">
-                        <p class="profile-id">Omar Khaled</p>
-                        <p class="profile-name">new</p>
-                    </div>
-                </div>
-                <span class="clickable follow-btn">Follow</span>
-            </div>
-
-            <!-- الشخص الثالث (محمود صالح) -->
-            <div class="profile-follow profile-foolow-hovering">
-                <div class="profile-follow-left">
-                    <div class="profile-follow-image">
-                        <img decoding="async" src="{{ url_for('static', filename='images/mahmoud_saleh.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
-                    </div>
-                    <div class="profile-follow-content">
-                        <p class="profile-id">Mahmoud Saleh</p>
-                        <p class="profile-name">new</p>
-                    </div>
-                </div>
-                <span class="clickable follow-btn">Follow</span>
-            </div>
-
-            <!-- الشخص الرابع -->
-            <div class="profile-follow profile-foolow-hovering">
-                <div class="profile-follow-left">
-                    <div class="profile-follow-image">
-                        <img decoding="async" src="{{ url_for('static', filename='images/ahmed.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
-                    </div>
-                    <div class="profile-follow-content">
-                        <p class="profile-id">Youssef Ali</p>
-                        <p class="profile-name">new</p>
-                    </div>
-                </div>
-                <span class="clickable follow-btn">Follow</span>
-            </div>
-
-            <!-- الشخص الخامس -->
-            <div class="profile-follow profile-foolow-hovering">
-                <div class="profile-follow-left">
-                    <div class="profile-follow-image">
-                        <img decoding="async" src="{{ url_for('static', filename='images/ali.jpeg') }}" alt="" onerror="this.src='https://via.placeholder.com/40'">
-                    </div>
-                    <div class="profile-follow-content">
-                        <p class="profile-id">Kareem Nabil</p>
-                        <p class="profile-name">new</p>
-                    </div>
-                </div>
-                <span class="clickable follow-btn">Follow</span>
-            </div>
-            
-            <p class="copyrights"> @All rights reserved by PAD</p>
-        </div>
     </div>
-</div> 
 
-<script src="{{ url_for('static', filename='mysite.js') }}" defer></script> 
+    <script src="{{ url_for('static', filename='mysite.js') }}" defer></script>
 
 </body>
 </html>
