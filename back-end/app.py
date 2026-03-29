@@ -1,10 +1,11 @@
-from flask import Flask, request, redirect, url_for, session, render_template, flash, jsonify
+from flask import Flask, request, redirect, url_for, session, render_template, flash, jsonify, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import SQLAlchemyError
 from models import db, User, Post, Comment, Like, Todo, Challenge, ChallengeSubmission, HostingOrder
-from datetime import datetime
+from datetime import datetime, timedelta
+from functools import wraps
 import os
 
 # ==========================================
@@ -12,7 +13,6 @@ import os
 # ==========================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# خليه مرن لو front-end جوه نفس المجلد أو بره
 PUBLIC_CANDIDATES = [
     os.path.join(BASE_DIR, 'front-end', 'public'),
     os.path.join(BASE_DIR, '..', 'front-end', 'public'),
@@ -35,7 +35,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(PUBLIC_DIR, 'static', 'images')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -60,6 +60,37 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# ==========================================
+# Admin Decorator
+# ==========================================
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login_page'))
+        if getattr(current_user, 'role', 'user') != 'admin':
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ==========================================
+# التحقق من حظر المستخدم
+# ==========================================
+@app.before_request
+def check_blocked_user():
+    allowed_endpoints = {'login_page', 'signup_page', 'static'}
+
+    if request.endpoint in allowed_endpoints:
+        return
+
+    if current_user.is_authenticated and getattr(current_user, 'is_blocked', False):
+        logout_user()
+        session.clear()
+        flash('Your account has been blocked.', 'danger')
+        return redirect(url_for('login_page'))
 
 
 # ==========================================
@@ -203,7 +234,8 @@ def get_shop_stats():
 
 
 def build_profile_context(user):
-    projects = Post.query.filter_by(user_id=user.id, post_type='project').order_by(Post.created_at.desc()).all()
+    user_posts = Post.query.filter_by(user_id=user.id).order_by(Post.created_at.desc()).all()
+    project_count = Post.query.filter_by(user_id=user.id, post_type='project').count()
     followers_count = user.followers.count()
 
     try:
@@ -215,7 +247,8 @@ def build_profile_context(user):
 
     context = {
         "user": user,
-        "projects": projects,
+        "projects": user_posts,
+        "projects_count": project_count,
         "followers_count": followers_count,
         "labs_count": labs_count,
         "leaderboard_users": leaderboard_users,
@@ -223,13 +256,17 @@ def build_profile_context(user):
         "todos": [],
         "orders_count": 0,
         "total_spent": 0,
-        "shop_orders": []
+        "shop_orders": [],
+        "hosting_orders": []
     }
 
     if current_user.is_authenticated and current_user.id == user.id:
         context["todos"] = Todo.query.filter_by(user_id=user.id).order_by(
             Todo.is_completed.asc(),
             Todo.created_at.desc()
+        ).all()
+        context["hosting_orders"] = HostingOrder.query.filter_by(user_id=user.id).order_by(
+            HostingOrder.created_at.desc()
         ).all()
         context.update(get_shop_stats())
 
@@ -269,9 +306,11 @@ def index():
 @app.route('/home')
 @login_required
 def home_page():
-    posts = Post.query.order_by(Post.created_at.desc()).all()
-    return render_template('html.html', posts=posts)
+    web_posts = Post.query.filter(
+        Post.programming_language.in_(['html', 'css', 'javascript', 'js'])
+    ).order_by(Post.created_at.desc()).limit(10).all()
 
+    return render_template('html.html', posts=web_posts)
 
 @app.route('/book-details/<int:id>')
 @login_required
@@ -284,6 +323,133 @@ def book_details(id):
     return render_template('book-details.html', product=product)
 
 
+# ==========================================
+# Admin Routes
+# ==========================================
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    stats = {
+        "users_count": User.query.count(),
+        "posts_count": Post.query.count(),
+        "comments_count": Comment.query.count(),
+        "challenges_count": Challenge.query.count(),
+        "hosting_orders_count": HostingOrder.query.count()
+    }
+
+    users = User.query.order_by(User.created_at.desc()).all()
+    posts = Post.query.order_by(Post.created_at.desc()).limit(20).all()
+    comments = Comment.query.order_by(Comment.created_at.desc()).limit(20).all()
+    hosting_orders = HostingOrder.query.order_by(HostingOrder.created_at.desc()).limit(20).all()
+
+    return render_template(
+        'admin.html',
+        stats=stats,
+        users=users,
+        posts=posts,
+        comments=comments,
+        hosting_orders=hosting_orders
+    )
+
+
+@app.route('/admin/delete-post/<int:post_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    flash('Post deleted successfully', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/delete-comment/<int:comment_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    db.session.delete(comment)
+    db.session.commit()
+    flash('Comment deleted successfully', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/delete-user/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if user.id == current_user.id:
+        flash('You cannot delete yourself', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    db.session.delete(user)
+    db.session.commit()
+    flash('User deleted successfully', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/delete-project/<int:project_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_project(project_id):
+    project = Post.query.get_or_404(project_id)
+    db.session.delete(project)
+    db.session.commit()
+    flash('Project deleted successfully', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/toggle-block/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_block_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if user.id == current_user.id:
+        flash('You cannot block yourself', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    user.is_blocked = not user.is_blocked
+    db.session.commit()
+
+    flash('User status updated', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/toggle-role/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_role_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if user.id == current_user.id:
+        flash('You cannot change your own role here', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    user.role = 'admin' if user.role != 'admin' else 'user'
+    db.session.commit()
+
+    flash('User role updated successfully', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/hosting/cancel/<int:order_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_cancel_hosting_order(order_id):
+    order = HostingOrder.query.get_or_404(order_id)
+    order.status = 'cancelled'
+    db.session.commit()
+    flash('Hosting order cancelled successfully', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+# ==========================================
+# Auth Routes
+# ==========================================
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
     if current_user.is_authenticated:
@@ -299,6 +465,9 @@ def login_page():
         user = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password, password):
+            if getattr(user, 'is_blocked', False):
+                return render_template('login.html', message="❌ Your account has been blocked")
+
             login_user(user)
             session['user_id'] = user.id
             session['username'] = user.username
@@ -344,7 +513,9 @@ def signup_page():
             email=email,
             password=hashed_password,
             gender=gender,
-            programming_level=programming_level
+            programming_level=programming_level,
+            role='user',
+            is_blocked=False
         )
 
         db.session.add(new_user)
@@ -366,7 +537,10 @@ def logout_page():
     return redirect(url_for('login_page'))
 
 
-@app.route('/checkout')
+# ==========================================
+# Main Pages
+# ==========================================
+@app.route('/checkout-page')
 @login_required
 def checkout_page():
     return render_template('checkout.html')
@@ -405,7 +579,7 @@ def create_project_page():
         code_content = request.form.get('code_content', '').strip()
         css_content = request.form.get('css_content', '').strip()
         js_content = request.form.get('js_content', '').strip()
-        programming_language = request.form.get('programming_language', '').strip()
+        programming_language = request.form.get('programming_language', '').strip().lower()
 
         new_post = Post(
             user_id=current_user.id,
@@ -422,10 +596,14 @@ def create_project_page():
         award_points(current_user, 10)
         db.session.commit()
 
-        return redirect(url_for('home_page'))
+        if programming_language == 'python':
+            return redirect(url_for('python_community_page'))
+        elif programming_language in ['html', 'css', 'javascript', 'js']:
+            return redirect(url_for('home_page'))
+        else:
+            return redirect(url_for('home_page'))
 
     return render_template('create-project.html')
-
 
 @app.route('/profile')
 @login_required
@@ -458,7 +636,7 @@ def profile_summary():
             "level": current_user.level
         },
         "stats": {
-            "projects_count": len(context["projects"]),
+            "projects_count": context.get("projects_count", 0),
             "followers_count": context["followers_count"],
             "labs_count": context["labs_count"],
             "orders_count": context["orders_count"],
@@ -467,7 +645,9 @@ def profile_summary():
         }
     })
 
-
+# ==========================================
+# Projects APIs
+# ==========================================
 @app.route('/api/add-project', methods=['POST'])
 @login_required
 def add_project():
@@ -510,7 +690,7 @@ def add_project():
 def delete_project(project_id):
     project = Post.query.get_or_404(project_id)
 
-    if project.user_id != current_user.id:
+    if project.user_id != current_user.id and getattr(current_user, 'role', 'user') != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
 
     db.session.delete(project)
@@ -942,9 +1122,7 @@ def shop_orders_api():
 # ==========================================
 # Challenges APIs
 # ==========================================
-
 def get_challenge_points(difficulty):
-    """إرجاع نقاط التحدي حسب الصعوبة"""
     points_map = {
         'beginner': 10,
         'intermediate': 25,
@@ -954,7 +1132,6 @@ def get_challenge_points(difficulty):
 
 
 def award_challenge_points(user, difficulty):
-    """منح نقاط للمستخدم عند حل التحدي"""
     points = get_challenge_points(difficulty)
     user.points = int(user.points or 0) + points
     user.update_level()
@@ -963,14 +1140,13 @@ def award_challenge_points(user, difficulty):
 
 
 def verify_python_solution(user_code, expected_output):
-    """التحقق من حل Python"""
     try:
         import sys
         from io import StringIO
-        
+
         old_stdout = sys.stdout
         sys.stdout = captured_output = StringIO()
-        
+
         try:
             exec(user_code)
             output = captured_output.getvalue().strip()
@@ -984,7 +1160,6 @@ def verify_python_solution(user_code, expected_output):
 
 
 def verify_html_solution(user_code, expected_output):
-    """التحقق من حل HTML/CSS"""
     code_lower = user_code.lower()
     expected_lower = expected_output.lower()
     return expected_lower in code_lower
@@ -993,19 +1168,18 @@ def verify_html_solution(user_code, expected_output):
 @app.route('/api/challenges')
 @login_required
 def get_challenges():
-    """جلب قائمة التحديات"""
     language = request.args.get('language', 'python')
     challenges = Challenge.query.filter_by(language=language).all()
-    
+
     solved_challenge_ids = set()
     submissions = ChallengeSubmission.query.filter_by(
         user_id=current_user.id,
         is_passed=True
     ).all()
-    
+
     for sub in submissions:
         solved_challenge_ids.add(sub.challenge_id)
-    
+
     return jsonify({
         'success': True,
         'challenges': [{
@@ -1025,7 +1199,6 @@ def get_challenges():
 @app.route('/api/challenges/<int:challenge_id>/starter')
 @login_required
 def get_starter_code(challenge_id):
-    """جلب starter code للتحدي"""
     challenge = Challenge.query.get_or_404(challenge_id)
     return jsonify({
         'success': True,
@@ -1036,34 +1209,33 @@ def get_starter_code(challenge_id):
 @app.route('/api/challenges/<int:challenge_id>/submit', methods=['POST'])
 @login_required
 def submit_challenge(challenge_id):
-    """حل التحدي والتحقق من صحة الكود"""
-    data = request.get_json()
+    data = request.get_json() or {}
     user_code = data.get('code', '').strip()
-    
+
     if not user_code:
         return jsonify({'success': False, 'error': 'No code provided'}), 400
-    
+
     challenge = Challenge.query.get_or_404(challenge_id)
-    
+
     existing_submission = ChallengeSubmission.query.filter_by(
         user_id=current_user.id,
         challenge_id=challenge_id,
         is_passed=True
     ).first()
-    
+
     if existing_submission:
         return jsonify({
-            'success': False, 
+            'success': False,
             'error': 'You have already completed this challenge!',
             'already_completed': True
         }), 400
-    
+
     is_correct = False
     if challenge.language == 'python':
         is_correct = verify_python_solution(user_code, challenge.sample_output)
     elif challenge.language == 'web':
         is_correct = verify_html_solution(user_code, challenge.sample_output)
-    
+
     submission = ChallengeSubmission(
         user_id=current_user.id,
         challenge_id=challenge_id,
@@ -1071,11 +1243,11 @@ def submit_challenge(challenge_id):
         is_passed=is_correct
     )
     db.session.add(submission)
-    
+
     if is_correct:
         points_earned = award_challenge_points(current_user, challenge.difficulty)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'is_correct': True,
@@ -1084,25 +1256,24 @@ def submit_challenge(challenge_id):
             'user_points': current_user.points,
             'user_level': current_user.level
         })
-    else:
-        db.session.commit()
-        return jsonify({
-            'success': True,
-            'is_correct': False,
-            'message': '❌ Your solution is incorrect. Try again!',
-            'expected_output': challenge.sample_output
-        })
+
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'is_correct': False,
+        'message': '❌ Your solution is incorrect. Try again!',
+        'expected_output': challenge.sample_output
+    })
 
 
 @app.route('/api/user/stats')
 @login_required
 def get_user_stats():
-    """جلب إحصائيات المستخدم للتحديث الديناميكي"""
     solved_labs = ChallengeSubmission.query.filter_by(
         user_id=current_user.id,
         is_passed=True
     ).count()
-    
+
     return jsonify({
         'success': True,
         'labs_solved': solved_labs,
@@ -1112,11 +1283,9 @@ def get_user_stats():
 
 
 def seed_challenges():
-    """إضافة تحديات أولية لقاعدة البيانات"""
     with app.app_context():
         if Challenge.query.count() == 0:
             challenges = [
-                # Python - Beginner
                 Challenge(
                     title="طباعة نص بسيط",
                     description="استخدم أمر الطباعة في بايثون لطباعة 'Hello, PAD!'",
@@ -1144,7 +1313,7 @@ def seed_challenges():
                     difficulty="beginner",
                     sample_input="num = 4",
                     sample_output="Even",
-                    starter_code="# اكتب الكود هنا\nnum = 4\n\n# اكتب الشرط هنا\nif num % 2 == 0:\n    print('Even')\nelse:\n    print('Odd')",
+                    starter_code="# اكتب الكود هنا\nnum = 4\n\nif num % 2 == 0:\n    print('Even')\nelse:\n    print('Odd')",
                     points=10
                 ),
                 Challenge(
@@ -1164,10 +1333,9 @@ def seed_challenges():
                     difficulty="intermediate",
                     sample_input="sum_numbers(3, 7)",
                     sample_output="10",
-                    starter_code="# اكتب الكود هنا\ndef sum_numbers(a, b):\n    return a + b\n\n# اختبر الدالة\nprint(sum_numbers(3, 7))",
+                    starter_code="# اكتب الكود هنا\ndef sum_numbers(a, b):\n    return a + b\n\nprint(sum_numbers(3, 7))",
                     points=25
                 ),
-                # Web - Beginner
                 Challenge(
                     title="عنوان رئيسي HTML",
                     description="قم بإنشاء عنوان من النوع الأول H1 واكتب بداخله 'PAD Platform'",
@@ -1209,14 +1377,15 @@ def seed_challenges():
                     points=25
                 )
             ]
-            
+
             for challenge in challenges:
                 db.session.add(challenge)
-            
+
             db.session.commit()
             print(f"✅ تمت إضافة {len(challenges)} تحدياً بنجاح!")
         else:
-            print("⚠️ التحديات موجودة بالفعل في قاعدة البيانات")
+            print("⚠️ التحديات موجودة بالفعل")
+
 
 # ==========================================
 # Hosting Orders API
@@ -1224,30 +1393,24 @@ def seed_challenges():
 @app.route('/api/hosting/order', methods=['POST'])
 @login_required
 def create_hosting_order():
-    """إنشاء طلب استضافة جديد"""
-    
-    from datetime import timedelta
-    
     data = request.get_json()
-    
+
     if not data:
         return jsonify({'success': False, 'error': 'No data received'}), 400
-    
+
     plan_name = data.get('plan')
     domain = data.get('domain', '')
-    price = data.get('price', 0)
-    billing_period = data.get('billing', 'monthly')  # monthly or annual
-    
+    price = float(data.get('price', 0))
+    billing_period = data.get('billing', 'monthly')
+
     if not plan_name:
         return jsonify({'success': False, 'error': 'Plan is required'}), 400
-    
-    # حساب تاريخ الانتهاء
+
     if billing_period == 'monthly':
         expires_at = datetime.utcnow() + timedelta(days=30)
     else:
         expires_at = datetime.utcnow() + timedelta(days=365)
-    
-    # إنشاء الطلب
+
     order = HostingOrder(
         user_id=current_user.id,
         plan_name=plan_name,
@@ -1256,15 +1419,14 @@ def create_hosting_order():
         status='active',
         expires_at=expires_at
     )
-    
+
     db.session.add(order)
-    
-    # منح نقاط (10 نقاط لكل 100 جنيه)
+
     points_earned = int(price // 10)
     award_points(current_user, points_earned)
-    
+
     db.session.commit()
-    
+
     return jsonify({
         'success': True,
         'message': f'Hosting plan "{plan_name}" purchased successfully!',
@@ -1286,11 +1448,8 @@ def create_hosting_order():
 @app.route('/api/hosting/orders')
 @login_required
 def get_hosting_orders():
-    """جلب طلبات الاستضافة للمستخدم"""
-    
-    
     orders = HostingOrder.query.filter_by(user_id=current_user.id).order_by(HostingOrder.created_at.desc()).all()
-    
+
     return jsonify({
         'success': True,
         'orders': [{
@@ -1308,24 +1467,23 @@ def get_hosting_orders():
 @app.route('/api/hosting/cancel/<int:order_id>', methods=['POST'])
 @login_required
 def cancel_hosting_order(order_id):
-    """إلغاء طلب استضافة"""
-
-    
     order = HostingOrder.query.get_or_404(order_id)
-    
-    if order.user_id != current_user.id:
+
+    if order.user_id != current_user.id and getattr(current_user, 'role', 'user') != 'admin':
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-    
+
     if order.status == 'cancelled':
         return jsonify({'success': False, 'error': 'Order already cancelled'}), 400
-    
+
     order.status = 'cancelled'
     db.session.commit()
-    
+
     return jsonify({
         'success': True,
         'message': f'Hosting plan "{order.plan_name}" has been cancelled.'
     })
+
+
 # ==========================================
 # Pages
 # ==========================================
@@ -1347,7 +1505,7 @@ def shop_page():
     return render_template('shop.html')
 
 
-@app.route('/checkout', methods=['POST'])
+@app.route('/api/checkout', methods=['POST'])
 @login_required
 def checkout():
     data = request.get_json() or {}
@@ -1463,6 +1621,26 @@ def blog_page():
 def support_page():
     return render_template('support.html')
 
+@app.route('/community/python')
+@login_required
+def python_community_page():
+    python_posts = Post.query.filter(
+        Post.programming_language.ilike('python')
+    ).order_by(Post.created_at.desc()).limit(10).all()
+
+    return render_template('python-community.html', posts=python_posts)
+# ==========================================
+# Error Handlers
+# ==========================================
+@app.errorhandler(403)
+def forbidden_error(error):
+    return "403 Forbidden", 403
+
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return "404 Not Found", 404
+
 
 # ==========================================
 # DB init
@@ -1475,5 +1653,5 @@ def init_database():
 
 
 if __name__ == "__main__":
-    init_database()
+    # init_database()
     app.run(debug=True, port=5000)
