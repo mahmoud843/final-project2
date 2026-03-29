@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Community | PAD</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='mysite.css') }}">
+</head>
+<body>
+
+<style>
+    :root {
+        --py-hero-bg: linear-gradient(135deg, rgba(27,116,228,0.12), rgba(34,197,94,0.10));
+        --py-code-bg: #07111f;
+        --py-code-color: #7cffb2;
+        --py-border: rgba(27,116,228,0.18);
+        --py-soft-text: #5b6b88;
+        --py-card-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    body.dark-mode {
+        --py-hero-bg: linear-gradient(135deg, rgba(27,116,228,0.20), rgba(34,197,94,0.12));
+        --py-code-bg: #050814;
+        --py-code-color: #7cffb2;
+        --py-border: rgba(145,175,255,0.10);
+        --py-soft-text: #8fa5de;
+        --py-card-shadow: 0 8px 22px rgba(0,0,0,0.25);
+    }
+
+    .community-hero {
+        width: 100%;
+        max-width: 600px;
+        background: var(--py-hero-bg);
+        border: 1px solid var(--py-border);
+        border-radius: 18px;
+        padding: 24px;
+        margin: 0 auto 20px auto;
+        box-shadow: var(--py-card-shadow);
+        color: var(--font-color);
+    }
+
+    .community-hero h1 {
+        margin: 0 0 10px 0;
+        font-size: 30px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--font-color);
+    }
+
+    .community-hero p {
+        margin: 0;
+        line-height: 1.8;
+        color: var(--secod-font-color);
+    }
+
+    .community-section-title {
+        width: 100%;
+        max-width: 600px;
+        margin: 10px auto 14px auto;
+        color: var(--font-color);
+        font-size: 22px;
+        font-weight: 800;
+    }
+
+    .project-badge-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+    }
+
+    .project-badge {
+        padding: 7px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--secondary-font-color);
+        color: var(--secod-font-color);
+        font-size: 12px;
+        font-weight: 700;
+        background: rgba(255,255,255,0.03);
+    }
+
+    .python-post-meta {
+        color: var(--secod-font-color);
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+
+    .community-note {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto 16px auto;
+        color: var(--secod-font-color);
+        font-size: 14px;
+        text-align: center;
+    }
+
+    .languages-bar li a {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+        .community-hero,
+        .community-section-title,
+        .community-note {
+            max-width: 100%;
+        }
+
+        .community-hero h1 {
+            font-size: 24px;
+        }
+    }
+</style>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<div class="container">
+    <nav>
+        <div class="navbar">
+            <div class="text-logo">
+                <img decoding="async"
+                     src="{{ url_for('static', filename='images/logo.png') }}"
+                     id="Dark-mode"
+                     alt="logo"
+                     onerror="this.src='https://via.placeholder.com/200x50?text=Monarmez'">
+            </div>
+
+            {% if current_user.is_authenticated and current_user.role == 'admin' %}
+            <div class="sub-section">
+                <i class="fa-solid fa-shield-halved"></i>
+                <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
+            </div>
+            {% endif %}
+
+            <div class="sub-section">
+                <i class="fa-solid fa-home"></i>
+                <a href="{{ url_for('home_page') }}">Home</a>
+            </div>
+
+            <div class="sub-section" id="communitiesSection">
+                <i class="fa-regular fa-comments"></i>
+                <a href="#" id="communitiesBtn">Communities</a>
+                <div class="languages-bar" id="languagesBar">
+                    <ul class="top-row">
+                        <li>
+                            <a href="{{ url_for('home_page') }}">HTML / CSS / JS</a>
+                        </li>
+                    </ul>
+                    <ul class="bottom-row">
+                        <li>
+                            <a href="{{ url_for('python_community_page') }}">Python</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="sub-section" id="clicked">
+                <i class="fa-solid fa-sun"></i>
+                <a href="#">Dark Mode</a>
+            </div>
+
+            <div class="sub-section">
+                <i class="fa-regular fa-user"></i>
+                <a href="{{ url_for('profile') }}">Profile</a>
+            </div>
+
+            <div class="sub-section">
+                <i class="fa-solid fa-server"></i>
+                <a href="{{ url_for('hosting_page') }}">Hosting</a>
+            </div>
+
+            <div class="sub-section" id="hidden2">
+                <i class="fa-sharp fa-solid fa-laptop"></i>
+                <a href="{{ url_for('codelab_page') }}" target="_self">Code Lab</a>
+            </div>
+
+            <div class="sub-section">
+                <i class="fa-solid fa-shop"></i>
+                <a href="{{ url_for('shop_page') }}">Shop</a>
+            </div>
+
+            <div class="sub-section">
+                <i class="fa-solid fa-robot"></i>
+                <a href="{{ url_for('ai_page') }}">AI Chatbot</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="middle-section">
+
+        <a href="{{ url_for('create_project_page') }}" style="text-decoration: none; color: inherit; display: block; width: 100%;">
+            <div class="create-post-container">
+                <div class="create-post-card">
+                    <div class="create-post-header">
+                        <img src="{{ url_for('static', filename='images/sia.jpeg') }}"
+                             alt="avatar"
+                             class="create-post-avatar"
+                             onerror="this.src='https://via.placeholder.com/40'">
+                        <div class="create-post-input-wrapper">
+                            <span class="create-post-placeholder">
+                                {% if session.username %}What's on your mind, {{ session.username }}?{% else %}What's on your mind?{% endif %}
+                            </span>
+                        </div>
+                        <div class="create-post-icon">
+                            <i class="fa-solid fa-images"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+          <div class="post-area" id="posts-area">
+
+            <h2 class="community-section-title" style="margin-top: 6px;">Community Python Posts</h2>
+
+            {% if posts %}
+                {% for post in posts %}
+                <div class="post-main" data-post-id="{{ post.id }}" data-post-type="{{ post.post_type }}">
+                    <div class="post-header">
+                        <div class="post-left-header">
+                            <div class="post-image">
+                                <img decoding="async"
+                                     src="{{ url_for('static', filename='images/' ~ (post.author.profile_image or 'default-avatar.png')) }}"
+                                     alt=""
+                                     onerror="this.src='https://via.placeholder.com/40'">
+                            </div>
+                            <p class="post-username">{{ post.author.username }}</p>
+                            <span class="one-day"> . {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            {% if session.user_id == post.user_id or current_user.role == 'admin' %}
+                            <i class="fa-solid fa-trash delete-btn"
+                               style="color: #ef4444; cursor: pointer; transition: 0.3s;"
+                               title="Delete Post"
+                               data-post-id="{{ post.id }}"
+                               onmouseover="this.style.transform='scale(1.2)'"
+                               onmouseout="this.style.transform='scale(1)'"></i>
+                            {% endif %}
+                            <i class="fa-solid fa-grip-lines"></i>
+                        </div>
+                    </div>
+
+                    <div class="post-main-image">
+                        <div class="python-post-meta">
+                            {{ post.programming_language or 'python' }} • {{ post.post_type }}
+                        </div>
+
+                        {% if post.post_type == 'question' %}
+                            <h3>{{ post.title }}</h3>
+                            <p>{{ post.description }}</p>
+
+                        {% elif post.post_type == 'project' or post.post_type == 'code' %}
+                            <h3>{{ post.title or 'Untitled Project' }}</h3>
+                            <p>{{ post.description or 'No description' }}</p>
+
+                            <div class="project-badge-row">
+                                <span class="project-badge">
+                                    <i class="fa-solid fa-code"></i>
+                                    {{ post.programming_language or 'python' }}
+                                </span>
+                                <span class="project-badge">
+                                    <i class="fa-solid fa-diagram-project"></i>
+                                    {{ post.post_type }}
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="post-fotter">
+                        <div class="post-fotter-left">
+                            <i class="fa-sharp-duotone fa-solid fa-star like-btn {% if current_user.id in post.likes|map(attribute='user_id')|list %}liked{% endif %}"
+                               onclick="toggleLike({{ post.id }}, this)"></i>
+                            <span class="likes-count" id="likes-{{ post.id }}">{{ post.likes|length }}</span>
+                            <i class="fa-sharp-duotone fa-solid fa-comments" onclick="focusComment({{ post.id }})"></i>
+                            <span class="comments-count" id="comments-count-{{ post.id }}">{{ post.comments|length }}</span>
+                            <i class="fa-sharp-duotone fa-solid fa-share"></i>
+                        </div>
+                    </div>
+
+                    <div class="post-description">
+                        <p class="post-liked">liked by <span id="likes-text-{{ post.id }}">{{ post.likes|length }} people</span></p>
+
+                        <div class="comments-section">
+                            <div class="comments-list" id="comments-{{ post.id }}">
+                                {% for comment in post.comments[-3:] %}
+                                <div class="comment-item" id="comment-{{ comment.id }}">
+                                    <span>{{ comment.author.username }}:</span> {{ comment.comment_text }}
+                                    <small style="color: #888; font-size: 10px; margin-right: 10px;">{{ comment.created_at.strftime('%H:%M') }}</small>
+                                </div>
+                                {% else %}
+                                <div class="no-comments" style="color: #888; text-align: center; padding: 5px;">
+                                    No comments yet. Be the first to comment!
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            {% if post.comments|length > 3 %}
+                            <button class="load-more-btn" data-post-id="{{ post.id }}" onclick="loadMoreComments(this)">
+                                View all {{ post.comments|length }} comments
+                            </button>
+                            {% endif %}
+
+                            <div class="comment-input-group">
+                                <input type="text"
+                                       id="comment-{{ post.id }}"
+                                       placeholder="Write a comment..."
+                                       onkeypress="if(event.key==='Enter') addComment({{ post.id }})">
+                                <button onclick="addComment({{ post.id }})">
+                                    <i class="fa-solid fa-paper-plane"></i> Post
+                                </button>
+                            </div>
+
+                            <div class="comment-success" id="success-{{ post.id }}">✓ Comment added!</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="post-main">
+                    <div class="post-header">
+                        <p style="text-align: center; color: #888; padding: 20px;">No Python posts yet. Be the first to create one!</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <h2 class="community-section-title">Featured Python Projects</h2>
+            <p class="community-note">مشاريع Python مثبتة ومميزة داخل المجتمع.</p>
+
+            <div class="post-main">
+                <div class="post-header">
+                    <div class="post-left-header">
+                        <div class="post-image">
+                            <img decoding="async"
+                                 src="{{ url_for('static', filename='images/sia.jpeg') }}"
+                                 alt=""
+                                 onerror="this.src='/static/images/default-avatar.png'">
+                        </div>
+                        <p class="post-username">PAD Python</p>
+                        <span class="one-day"> . Featured Project </span>
+                    </div>
+                    <i class="fa-solid fa-grip-lines"></i>
+                </div>
+
+                <div class="post-main-image">
+    <h3>Project 1: My Personal Diary</h3>
+    <p>
+        تطبيق Desktop بسيط ومميز باستخدام Tkinter لكتابة اليوميات الشخصية، مع إمكانية
+        حفظ المذكرات في ملف نصي وتحميلها لاحقًا.
+    </p>
+
+    <img src="{{ url_for('static', filename='images/diary-project.png') }}"
+         alt="My Personal Diary"
+         style="width: 100%; max-width: 500px; border-radius: 12px; margin-top: 14px;"
+         onerror="this.style.display='none'">
+
+    <div class="project-badge-row">
+        <span class="project-badge"><i class="fa-solid fa-code"></i> Python</span>
+        <span class="project-badge"><i class="fa-solid fa-book"></i> Productivity</span>
+        <span class="project-badge"><i class="fa-solid fa-window-maximize"></i> Tkinter GUI</span>
+    </div>
+</div>
+                <div class="post-fotter">
+                    <div class="post-fotter-left">
+                        <i class="fa-sharp-duotone fa-solid fa-star"></i>
+                        <i class="fa-sharp-duotone fa-solid fa-comments"></i>
+                        <i class="fa-sharp-duotone fa-solid fa-share"></i>
+                    </div>
+                </div>
+
+                <div class="post-description">
+                    <p class="post-liked">featured by PAD</p>
+                    <p class="title"><span>Community</span> Great Tkinter project for writing and saving personal notes.</p>
+                    <div class="comment-section">
+                        <ul id="pythonProjectComments1"></ul>
+                        <div class="input2-container">
+                            <input type="text" class="input2" id="pythonCommentInput1" placeholder="Add a comment...">
+                            <button type="button">Post</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="post-main">
+                <div class="post-header">
+                    <div class="post-left-header">
+                        <div class="post-image">
+                            <img decoding="async"
+                                 src="{{ url_for('static', filename='images/img4.jpeg') }}"
+                                 alt=""
+                                 onerror="this.src='/static/images/default-avatar.png'">
+                        </div>
+                        <p class="post-username">PAD Python</p>
+                        <span class="one-day"> . Featured Project </span>
+                    </div>
+                    <i class="fa-solid fa-grip-lines"></i>
+                </div>
+
+          <div class="post-main-image">
+    <h3>Project 2: Sudoku Solver</h3>
+    <p>
+        تطبيق Sudoku Solver بواجهة رسومية باستخدام Tkinter، يقرأ القيم من المستخدم
+        ويحل اللغز باستخدام خوارزمية Backtracking.
+    </p>
+
+    <img src="{{ url_for('static', filename='images/sudoku-project.png') }}"
+         alt="Sudoku Solver"
+         style="width: 100%; max-width: 500px; border-radius: 12px; margin-top: 14px;"
+         onerror="this.style.display='none'">
+
+    <div class="project-badge-row">
+        <span class="project-badge"><i class="fa-solid fa-code"></i> Python</span>
+        <span class="project-badge"><i class="fa-solid fa-brain"></i> Algorithms</span>
+        <span class="project-badge"><i class="fa-solid fa-table-cells-large"></i> Tkinter GUI</span>
+    </div>
+</div>
+
+                <div class="post-fotter">
+                    <div class="post-fotter-left">
+                        <i class="fa-sharp-duotone fa-solid fa-star"></i>
+                        <i class="fa-sharp-duotone fa-solid fa-comments"></i>
+                        <i class="fa-sharp-duotone fa-solid fa-share"></i>
+                    </div>
+                </div>
+
+                <div class="post-description">
+                    <p class="post-liked">featured by PAD</p>
+                    <p class="title"><span>Community</span> Excellent Python GUI project combining validation and backtracking.</p>
+                    <div class="comment-section">
+                        <ul id="pythonProjectComments2"></ul>
+                        <div class="input2-container">
+                            <input type="text" class="input2" id="pythonCommentInput2" placeholder="Add a comment...">
+                            <button type="button">Post</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <div class="container-2">
+        <div class="follow-section">
+
+            {% if session.username %}
+            <div class="profile-follow profile-foolow-hovering">
+                <div class="profile-follow-left">
+                    <div class="profile-follow-image">
+                        <img decoding="async"
+                             src="{{ url_for('static', filename='images/' + current_user.profile_image) }}"
+                             alt=""
+                             onerror="this.src='https://via.placeholder.com/40'">
+                    </div>
+                    <div class="profile-follow-content">
+                        <p class="profile-id">{{ session.username }}</p>
+                        <p class="profile-name">online</p>
+                    </div>
+                </div>
+                <span class="clickable follow-btn" onclick="navigateToProfile()">My Profile</span>
+            </div>
+            {% endif %}
+
+            <div class="suggestion-follow">
+                <p class="suggestion">suggestion</p>
+                <a href="#" class="see-all">All</a>
+            </div>
+
+            <div id="suggestions-container"></div>
+
+            <p class="copyrights">@All rights reserved by PAD</p>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='mysite.js') }}" defer></script>
+</body>
+</html>
