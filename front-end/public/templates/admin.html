@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | PAD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #070b17;
+            color: #eaf0ff;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1400px;
+            margin: 30px auto;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .topbar a {
+            color: #fff;
+            text-decoration: none;
+            background: #1b74e4;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #0f1933;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            color: #8fa5de;
+        }
+
+        .card .value {
+            font-size: 30px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .section {
+            background: #0f1933;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            text-align: left;
+        }
+
+        th {
+            color: #8fa5de;
+            font-size: 14px;
+        }
+
+        td {
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .btn {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 2px;
+        }
+
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-warning { background: #eab308; color: black; }
+        .btn-success { background: #22c55e; color: white; }
+        .btn-primary { background: #1b74e4; color: white; }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-admin { background: rgba(27,116,228,0.2); color: #6ce5ff; }
+        .badge-user { background: rgba(255,255,255,0.08); color: #fff; }
+        .badge-blocked { background: rgba(239,68,68,0.2); color: #fca5a5; }
+        .badge-active { background: rgba(34,197,94,0.2); color: #86efac; }
+
+        .flash {
+            margin-bottom: 20px;
+        }
+
+        .flash div {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .flash-success { background: rgba(34,197,94,0.15); color: #86efac; }
+        .flash-danger { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <div class="title">PAD Admin Panel</div>
+            <a href="{{ url_for('home_page') }}">Back Home</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash">
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="stats">
+            <div class="card">
+                <h3>Users</h3>
+                <div class="value">{{ stats.users_count }}</div>
+            </div>
+            <div class="card">
+                <h3>Posts</h3>
+                <div class="value">{{ stats.posts_count }}</div>
+            </div>
+            <div class="card">
+                <h3>Comments</h3>
+                <div class="value">{{ stats.comments_count }}</div>
+            </div>
+            <div class="card">
+                <h3>Challenges</h3>
+                <div class="value">{{ stats.challenges_count }}</div>
+            </div>
+            <div class="card">
+                <h3>Hosting Orders</h3>
+                <div class="value">{{ stats.hosting_orders_count }}</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Users Management</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Points</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                    <span class="badge badge-admin">Admin</span>
+                                {% else %}
+                                    <span class="badge badge-user">User</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_blocked %}
+                                    <span class="badge badge-blocked">Blocked</span>
+                                {% else %}
+                                    <span class="badge badge-active">Active</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.points }}</td>
+                            <td>
+                                {% if user.id != current_user.id %}
+                                <form action="{{ url_for('toggle_role_user', user_id=user.id) }}" method="POST" style="display:inline;">
+                                    <button class="btn btn-primary" type="submit">Toggle Role</button>
+                                </form>
+
+                                <form action="{{ url_for('toggle_block_user', user_id=user.id) }}" method="POST" style="display:inline;">
+                                    <button class="btn btn-warning" type="submit">
+                                        {% if user.is_blocked %}Unblock{% else %}Block{% endif %}
+                                    </button>
+                                </form>
+
+                                <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this user?');">
+                                    <button class="btn btn-danger" type="submit">Delete</button>
+                                </form>
+                                {% else %}
+                                    <span style="color:#8fa5de;">Current Admin</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Posts Management</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in posts %}
+                        <tr>
+                            <td>{{ post.id }}</td>
+                            <td>{{ post.title or 'Untitled' }}</td>
+                            <td>{{ post.author.username if post.author else 'Unknown' }}</td>
+                            <td>{{ post.post_type }}</td>
+                            <td>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <form action="{{ url_for('admin_delete_post', post_id=post.id) }}" method="POST" onsubmit="return confirm('Delete this post?');">
+                                    <button class="btn btn-danger" type="submit">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Comments Management</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Comment</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for comment in comments %}
+                        <tr>
+                            <td>{{ comment.id }}</td>
+                            <td>{{ comment.author.username if comment.author else 'Unknown' }}</td>
+                            <td>{{ comment.comment_text }}</td>
+                            <td>{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <form action="{{ url_for('admin_delete_comment', comment_id=comment.id) }}" method="POST" onsubmit="return confirm('Delete this comment?');">
+                                    <button class="btn btn-danger" type="submit">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Hosting Orders</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User ID</th>
+                            <th>Plan</th>
+                            <th>Domain</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th>Expires</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in hosting_orders %}
+                        <tr>
+                            <td>{{ order.id }}</td>
+                            <td>{{ order.user_id }}</td>
+                            <td>{{ order.plan_name }}</td>
+                            <td>{{ order.domain or 'Not set' }}</td>
+                            <td>{{ order.price }}</td>
+                            <td>{{ order.status }}</td>
+                            <td>{{ order.expires_at.strftime('%Y-%m-%d') if order.expires_at else 'N/A' }}</td>
+                            <td>
+                                {% if order.status != 'cancelled' %}
+                                <form action="{{ url_for('admin_cancel_hosting_order', order_id=order.id) }}" method="POST" onsubmit="return confirm('Cancel this hosting order?');">
+                                    <button class="btn btn-warning" type="submit">Cancel</button>
+                                </form>
+                                {% else %}
+                                <span style="color:#8fa5de;">Cancelled</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
