@@ -14,7 +14,6 @@
         <div class="main-content">
 
             <form id="createProjectForm" method="POST" action="{{ url_for('create_project_page') }}">
-                <!-- hidden fields للإرسال للباك إند -->
                 <input type="hidden" name="post_type" id="post_type_hidden" value="question">
                 <input type="hidden" name="title" id="title_hidden">
                 <input type="hidden" name="description" id="description_hidden">
@@ -23,7 +22,6 @@
                 <input type="hidden" name="js_content" id="js_content_hidden">
                 <input type="hidden" name="programming_language" id="programming_language_hidden">
 
-                <!-- الهيدر مع زر الرجوع -->
                 <div class="project-header">
                     <h1>✨ إنشاء منشور جديد</h1>
                     <a href="{{ url_for('home_page') }}" class="close-btn">
@@ -31,23 +29,23 @@
                     </a>
                 </div>
 
-                <!-- اختيار نوع المنشور -->
                 <div class="post-type-selector">
-                    <button type="button" class="type-btn question active" onclick="switchPostType('question')">
+                    <button type="button" class="type-btn question active" onclick="switchPostType('question', event)">
                         <i class="fa-solid fa-question"></i>
                         <span>سؤال</span>
                     </button>
-                    <button type="button" class="type-btn project" onclick="switchPostType('project')">
+
+                    <button type="button" class="type-btn project" onclick="switchPostType('project', event)">
                         <i class="fa-solid fa-diagram-project"></i>
                         <span>مشروع</span>
                     </button>
-                    <button type="button" class="type-btn code" onclick="switchPostType('code')">
+
+                    <button type="button" class="type-btn code" onclick="switchPostType('code', event)">
                         <i class="fa-solid fa-code"></i>
                         <span>كود</span>
                     </button>
                 </div>
 
-                <!-- بطاقة المستخدم -->
                 <div class="user-card">
                     <img src="{{ url_for('static', filename='images/sia.jpeg') }}" alt="user" class="user-avatar" onerror="this.src='https://via.placeholder.com/60'">
                     <div class="user-info">
@@ -127,7 +125,38 @@
                     </div>
                 </div>
 
-                <!-- أزرار الإجراءات -->
+                <!-- نموذج الكود -->
+                <div id="codeForm" class="post-form">
+                    <div class="question-form">
+                        <div class="form-group">
+                            <label>عنوان الكود</label>
+                            <input type="text" class="form-control" id="codeTitle" placeholder="مثال: Bubble Sort in Python">
+                        </div>
+
+                        <div class="form-group">
+                            <label>وصف الكود</label>
+                            <textarea class="form-control" id="codeDesc" placeholder="اكتب وصف للكود أو فكرته..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>لغة البرمجة</label>
+                            <select class="form-control" id="codeLanguage">
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="html">HTML</option>
+                                <option value="css">CSS</option>
+                                <option value="java">Java</option>
+                                <option value="cpp">C++</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>الكود</label>
+                            <div id="code-editor" class="editor-container" style="min-height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="action-buttons">
                     <a href="{{ url_for('home_page') }}" class="btn btn-secondary">
                         <i class="fa-solid fa-times"></i> إلغاء
