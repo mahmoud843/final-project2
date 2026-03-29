@@ -86,7 +86,6 @@ function newElement() {
     addCloseButton(li);
     input.value = '';
 }
-
 window.newElement = newElement;
 
 /* =========================
@@ -334,7 +333,7 @@ const winningCombos = [
 ];
 
 function getXOResultElement() {
-    return document.getElementById('xo-result') || document.getElementById('result');
+    return document.getElementById('xo-result') || document.getElementById('result-xo');
 }
 
 function checkWinner() {
@@ -362,6 +361,8 @@ function handleMove(event) {
     const cell = event.target;
     const index = cell.dataset.index;
     const resultElement = getXOResultElement();
+
+    if (index === undefined) return;
 
     if (gameBoard[index] === '' && !checkWinner()) {
         gameBoard[index] = currentPlayer;
@@ -407,6 +408,8 @@ function initializeXOGame() {
         restartButton.addEventListener('click', handleRestartGame);
     }
 }
+
+window.handleMove = handleMove;
 
 /* =========================
    7) FOLLOW BUTTONS
@@ -468,8 +471,6 @@ function initializeCommunitiesBar() {
 
     bar.querySelectorAll('li').forEach(item => {
         item.addEventListener('click', function () {
-            const language = this.textContent.trim();
-            alert(`You selected: ${language}`);
             bar.classList.remove('show');
         });
     });
@@ -491,12 +492,12 @@ function initializeDeletePost() {
 
         if (confirm('هل أنت متأكد أنك تريد حذف هذا المنشور نهائيًا؟')) {
             try {
-                const response = await fetch(`/api/delete_post/${postId}`, {
-                    method: 'POST'
+                const response = await fetch(`/api/delete-project/${postId}`, {
+                    method: 'DELETE'
                 });
                 const result = await response.json();
 
-                if (result.status === 'success') {
+                if (result.success) {
                     const postElement = deleteButton.closest('.post-main');
                     if (postElement) postElement.remove();
                 } else {
@@ -539,7 +540,7 @@ function loadSuggestions() {
                     <div class="profile-follow profile-foolow-hovering" data-user-id="${user.id}">
                         <div class="profile-follow-left">
                             <div class="profile-follow-image">
-                                <img src="/static/images/${user.profile_image}" alt="${user.username}" onerror="this.src='https://via.placeholder.com/40'">
+                                <img src="/static/images/${user.profile_image}" alt="${user.username}" onerror="this.onerror=null;this.src='https://via.placeholder.com/40'">
                             </div>
                             <div class="profile-follow-content">
                                 <p class="profile-id">${user.username}</p>
@@ -687,7 +688,226 @@ window.loadMoreComments = loadMoreComments;
 window.focusComment = focusComment;
 
 /* =========================
-   14) PAGE INIT
+   14) CREATE PROJECT PAGE ONLY
+========================= */
+function initializeCreateProjectPage() {
+    const form = document.getElementById('createProjectForm');
+    const htmlEditorEl = document.getElementById('html-editor');
+    const cssEditorEl = document.getElementById('css-editor');
+    const jsEditorEl = document.getElementById('js-editor');
+    const codeEditorEl = document.getElementById('code-editor');
+
+    if (!form && !htmlEditorEl && !cssEditorEl && !jsEditorEl && !codeEditorEl) {
+        return;
+    }
+
+    if (window.ace) {
+        try {
+            if (htmlEditorEl) {
+                window.htmlEditor = ace.edit('html-editor');
+                window.htmlEditor.setTheme('ace/theme/monokai');
+                window.htmlEditor.session.setMode('ace/mode/html');
+                window.htmlEditor.setValue('<!-- اكتب كود HTML هنا -->', 1);
+                window.htmlEditor.setOptions({
+                    fontSize: '14px',
+                    showPrintMargin: false,
+                    enableBasicAutocompletion: true,
+                    enableLiveAutocompletion: true
+                });
+            }
+
+            if (cssEditorEl) {
+                window.cssEditor = ace.edit('css-editor');
+                window.cssEditor.setTheme('ace/theme/monokai');
+                window.cssEditor.session.setMode('ace/mode/css');
+                window.cssEditor.setValue('/* اكتب كود CSS هنا */', 1);
+                window.cssEditor.setOptions({
+                    fontSize: '14px',
+                    showPrintMargin: false
+                });
+            }
+
+            if (jsEditorEl) {
+                window.jsEditor = ace.edit('js-editor');
+                window.jsEditor.setTheme('ace/theme/monokai');
+                window.jsEditor.session.setMode('ace/mode/javascript');
+                window.jsEditor.setValue('// اكتب كود JavaScript هنا', 1);
+                window.jsEditor.setOptions({
+                    fontSize: '14px',
+                    showPrintMargin: false
+                });
+            }
+
+            if (codeEditorEl) {
+                window.codeEditor = ace.edit('code-editor');
+                window.codeEditor.setTheme('ace/theme/monokai');
+                window.codeEditor.session.setMode('ace/mode/python');
+                window.codeEditor.setValue('# اكتب الكود هنا', 1);
+                window.codeEditor.setOptions({
+                    fontSize: '14px',
+                    showPrintMargin: false,
+                    enableBasicAutocompletion: true,
+                    enableLiveAutocompletion: true
+                });
+            }
+        } catch (error) {
+            console.error('ACE editor init error:', error);
+        }
+    }
+
+    const codeLanguageSelect = document.getElementById('codeLanguage');
+    if (codeLanguageSelect && window.codeEditor) {
+        codeLanguageSelect.addEventListener('change', function () {
+            const lang = this.value;
+
+            if (lang === 'python') {
+                window.codeEditor.session.setMode('ace/mode/python');
+            } else if (lang === 'javascript') {
+                window.codeEditor.session.setMode('ace/mode/javascript');
+            } else if (lang === 'html') {
+                window.codeEditor.session.setMode('ace/mode/html');
+            } else if (lang === 'css') {
+                window.codeEditor.session.setMode('ace/mode/css');
+            } else if (lang === 'java') {
+                window.codeEditor.session.setMode('ace/mode/java');
+            } else if (lang === 'cpp') {
+                window.codeEditor.session.setMode('ace/mode/c_cpp');
+            }
+        });
+    }
+}
+
+function switchPostType(type, event) {
+    document.querySelectorAll('.post-form').forEach(form => {
+        form.classList.remove('active');
+    });
+
+    const targetForm = document.getElementById(type + 'Form');
+    if (targetForm) {
+        targetForm.classList.add('active');
+    }
+
+    document.querySelectorAll('.type-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    } else {
+        const fallbackBtn = document.querySelector('.type-btn.' + type);
+        if (fallbackBtn) fallbackBtn.classList.add('active');
+    }
+}
+window.switchPostType = switchPostType;
+
+function runProject() {
+    const preview = document.getElementById('preview');
+    if (!preview) return;
+
+    let html = '';
+    let css = '';
+    let js = '';
+
+    try {
+        html = window.htmlEditor ? window.htmlEditor.getValue() : '';
+        css = window.cssEditor ? window.cssEditor.getValue() : '';
+        js = window.jsEditor ? window.jsEditor.getValue() : '';
+    } catch (error) {
+        console.error('Run project error:', error);
+        return;
+    }
+
+    const fullCode = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+                ${css}
+            </style>
+        </head>
+        <body>
+            ${html}
+            <script>
+                ${js}
+            <\/script>
+        </body>
+        </html>
+    `;
+
+    preview.srcdoc = fullCode;
+}
+window.runProject = runProject;
+
+function publishPost() {
+    const postTypeInput = document.getElementById('post_type_hidden');
+    const titleInput = document.getElementById('title_hidden');
+    const descriptionInput = document.getElementById('description_hidden');
+    const codeInput = document.getElementById('code_content_hidden');
+    const cssInput = document.getElementById('css_content_hidden');
+    const jsInput = document.getElementById('js_content_hidden');
+    const langInput = document.getElementById('programming_language_hidden');
+    const form = document.getElementById('createProjectForm');
+
+    if (!form) return;
+
+    const activeBtn = document.querySelector('.type-btn.active');
+    if (!activeBtn) return;
+
+    let activeType = 'question';
+    if (activeBtn.classList.contains('project')) {
+        activeType = 'project';
+    } else if (activeBtn.classList.contains('code')) {
+        activeType = 'code';
+    }
+
+    postTypeInput.value = activeType;
+
+    if (activeType === 'question') {
+        titleInput.value = document.getElementById('questionTitle').value.trim();
+        descriptionInput.value = document.getElementById('questionDesc').value.trim();
+        codeInput.value = document.getElementById('questionCode').value.trim();
+        cssInput.value = '';
+        jsInput.value = '';
+
+        const selectedLang = document.getElementById('questionLanguage').value;
+        langInput.value = selectedLang === 'html' ? 'html' : selectedLang;
+
+    } else if (activeType === 'project') {
+        titleInput.value = 'New Project';
+        descriptionInput.value = 'Project created from PAD editor';
+        codeInput.value = window.htmlEditor ? window.htmlEditor.getValue() : '';
+        cssInput.value = window.cssEditor ? window.cssEditor.getValue() : '';
+        jsInput.value = window.jsEditor ? window.jsEditor.getValue() : '';
+        langInput.value = 'html';
+
+    } else if (activeType === 'code') {
+        titleInput.value = document.getElementById('codeTitle').value.trim();
+        descriptionInput.value = document.getElementById('codeDesc').value.trim();
+        codeInput.value = window.codeEditor ? window.codeEditor.getValue() : '';
+        cssInput.value = '';
+        jsInput.value = '';
+        langInput.value = document.getElementById('codeLanguage').value.trim();
+
+        if (!titleInput.value) {
+            alert('اكتب عنوان للكود');
+            return;
+        }
+
+        if (!codeInput.value.trim()) {
+            alert('اكتب الكود قبل النشر');
+            return;
+        }
+    }
+
+    form.submit();
+}
+window.publishPost = publishPost;
+
+/* =========================
+   15) PAGE INIT
 ========================= */
 function initializePage() {
     initializeAlerts();
@@ -706,225 +926,7 @@ function initializePage() {
     initializeCommunitiesBar();
     initializeDeletePost();
     loadSuggestions();
+    initializeCreateProjectPage();
 }
 
 document.addEventListener('DOMContentLoaded', initializePage);
-  // تشغيل محررات الأكواد
-        window.onload = function() {
-            // محرر HTML
-            var htmlEditor = ace.edit("html-editor");
-            htmlEditor.setTheme("ace/theme/monokai");
-            htmlEditor.session.setMode("ace/mode/html");
-            htmlEditor.setValue(`<!-- اكتب كود HTML هنا -->`, 1);
-            htmlEditor.setOptions({
-                fontSize: "14px",
-                showPrintMargin: false,
-                enableBasicAutocompletion: true,
-                enableLiveAutocompletion: true
-            });
-            // محرر CSS
-            var cssEditor = ace.edit("css-editor");
-            cssEditor.setTheme("ace/theme/monokai");
-            cssEditor.session.setMode("ace/mode/css");
-            cssEditor.setValue(`/* اكتب كود CSS هنا */`, 1);
-            cssEditor.setOptions({
-                fontSize: "14px",
-                showPrintMargin: false
-            });
-            // محرر JavaScript
-            var jsEditor = ace.edit("js-editor");
-            jsEditor.setTheme("ace/theme/monokai");
-            jsEditor.session.setMode("ace/mode/javascript");
-            jsEditor.setValue(`// اكتب كود JavaScript هنا`, 1);
-            jsEditor.setOptions({
-                fontSize: "14px",
-                showPrintMargin: false
-            });
-        };
-        // التبديل بين أنواع المنشورات
-        function switchPostType(type) {
-            // إخفاء كل النماذج
-            document.querySelectorAll('.post-form').forEach(form => {
-                form.classList.remove('active');
-            });
-            
-            // إظهار النموذج المختار
-            document.getElementById(type + 'Form').classList.add('active');
-            
-            // تحديث حالة الأزرار
-            document.querySelectorAll('.type-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.currentTarget.classList.add('active');
-        }
-        // تشغيل المشروع
-        function runProject() {
-            var html = ace.edit("html-editor").getValue();
-            var css = ace.edit("css-editor").getValue();
-            var js = ace.edit("js-editor").getValue();
-            var preview = document.getElementById('preview');
-            
-            var fullCode = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-                        ${css}
-                    </style>
-                </head>
-                <body>
-                    ${html}
-                    <script>
-                        ${js}
-                    <\/script>
-                </body>
-                </html>
-            `;
-            preview.srcdoc = fullCode;
-        }
-        // نشر المنشور (مربوط بـ Flask API)
-        async function publishPost() {
-            const activeBtn = document.querySelector('.type-btn.active');
-            if (!activeBtn) return;
-            
-            const activeType = activeBtn.classList.contains('question') ? 'question' : 
-                               activeBtn.classList.contains('project') ? 'project' : 'code';
-            
-            let postData = {};
-            
-            if (activeType === 'question') {
-                postData = {
-                    type: 'question',
-                    title: document.getElementById('questionTitle').value,
-                    description: document.getElementById('questionDesc').value,
-                    code: document.getElementById('questionCode').value,
-                    language: document.getElementById('questionLanguage').value
-                };
-            } else {
-                postData = {
-                    type: activeType,
-                    title: document.getElementById('questionTitle') ? document.getElementById('questionTitle').value : "New Project", // عشان لو مفيش title يبعت اسم افتراضي
-                    description: "Project/Code from Code Lab",
-                    html: ace.edit("html-editor").getValue(),
-                    css: ace.edit("css-editor").getValue(),
-                    js: ace.edit("js-editor").getValue()
-                };
-            }
-            
-            // تغيير نص الزرار عشان اليوزر يعرف إنه بيحمل
-            const publishBtn = document.querySelector('.btn-primary[onclick="publishPost()"]');
-            const originalBtnText = publishBtn.innerHTML;
-            publishBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري النشر...';
-            publishBtn.disabled = true;
-
-            try {
-                // إرسال البيانات لسيرفر Flask
-                const response = await fetch("{{ url_for('publish_post') }}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(postData)
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    alert('✅ ' + result.message);
-                    window.location.href = "{{ url_for('home_page') }}"; // التوجيه للصفحة الرئيسية
-                } else {
-                    alert('❌ خطأ: ' + result.message);
-                    publishBtn.innerHTML = originalBtnText;
-                    publishBtn.disabled = false;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('❌ حدث خطأ في الاتصال بالخادم.');
-                publishBtn.innerHTML = originalBtnText;
-                publishBtn.disabled = false;
-            }
-        }
-function publishPost() {
-    const postTypeInput = document.getElementById('post_type_hidden');
-    const titleInput = document.getElementById('title_hidden');
-    const descriptionInput = document.getElementById('description_hidden');
-    const codeInput = document.getElementById('code_content_hidden');
-    const cssInput = document.getElementById('css_content_hidden');
-    const jsInput = document.getElementById('js_content_hidden');
-    const langInput = document.getElementById('programming_language_hidden');
-    const form = document.getElementById('createProjectForm');
-
-    if (!form || !postTypeInput) return;
-
-    let activeType = 'question';
-    const activeBtn = document.querySelector('.post-type-selector .type-btn.active');
-    if (activeBtn) {
-        if (activeBtn.classList.contains('project')) activeType = 'project';
-        else if (activeBtn.classList.contains('code')) activeType = 'code';
-        else activeType = 'question';
-    }
-
-    postTypeInput.value = activeType;
-
-    if (activeType === 'question') {
-        const title = (document.getElementById('questionTitle')?.value || '').trim();
-        const description = (document.getElementById('questionDesc')?.value || '').trim();
-        const code = (document.getElementById('questionCode')?.value || '').trim();
-        const language = (document.getElementById('questionLanguage')?.value || '').trim();
-
-        if (!title && !description && !code) {
-            alert('اكتب عنوان أو وصف أو كود قبل النشر');
-            return;
-        }
-
-        titleInput.value = title || 'سؤال جديد';
-        descriptionInput.value = description;
-        codeInput.value = code;
-        cssInput.value = '';
-        jsInput.value = '';
-        langInput.value = language;
-    } else {
-        let htmlCode = '';
-        let cssCode = '';
-        let jsCode = '';
-
-        try {
-            if (window.htmlEditor) {
-                htmlCode = window.htmlEditor.getValue().trim();
-            } else if (document.getElementById('html-editor') && window.ace) {
-                htmlCode = ace.edit('html-editor').getValue().trim();
-            }
-        } catch (e) {}
-
-        try {
-            if (window.cssEditor) {
-                cssCode = window.cssEditor.getValue().trim();
-            } else if (document.getElementById('css-editor') && window.ace) {
-                cssCode = ace.edit('css-editor').getValue().trim();
-            }
-        } catch (e) {}
-
-        try {
-            if (window.jsEditor) {
-                jsCode = window.jsEditor.getValue().trim();
-            } else if (document.getElementById('js-editor') && window.ace) {
-                jsCode = ace.edit('js-editor').getValue().trim();
-            }
-        } catch (e) {}
-
-        if (!htmlCode && !cssCode && !jsCode) {
-            alert('اكتب كود قبل النشر');
-            return;
-        }
-
-        titleInput.value = activeType === 'code' ? 'كود جديد' : 'مشروع جديد';
-        descriptionInput.value = activeType === 'code' ? 'تم إنشاء كود جديد' : 'تم إنشاء مشروع جديد';
-        codeInput.value = htmlCode;
-        cssInput.value = cssCode;
-        jsInput.value = jsCode;
-        langInput.value = 'html';
-    }
-
-    form.submit();
-}
