@@ -69,14 +69,30 @@ function changeQty(i,delta){
   if(cart[i].qty <=0) cart.splice(i,1);
   updateCart();
 }
+document.getElementById('searchInput').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
 
-document.getElementById('categorySelect').addEventListener('change', e=>{
-  renderProducts(e.target.value);
+    productsGrid.innerHTML = "";
+
+    const filtered = products.filter(p =>
+        p.name.toLowerCase().includes(q)
+    );
+
+    filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = "card";
+
+        card.innerHTML = `
+        <div class="cover">
+            <img src="${p.img}" alt="${p.name}" style="width:100%">
+        </div>
+        <div class="meta">
+            <div class="price">${p.price} جنيه</div>
+            <button class="addBtn" onclick="addToCart(${p.id})">أضف للسلة</button>
+        </div>
+        `;
+
+        productsGrid.appendChild(card);
+    });
 });
-
-document.getElementById('searchInput').addEventListener('input', e=>{
-  const q = e.target.value.toLowerCase();
-  renderProducts().filter(p=>p.name.toLowerCase().includes(q));
-});
-
 renderProducts();
