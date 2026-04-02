@@ -32,7 +32,7 @@ app = Flask(
 # الإعدادات الأساسية
 # ==========================================
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost/fp-final'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost/fp'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(PUBLIC_DIR, 'static', 'images')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -249,7 +249,7 @@ def get_shop_stats():
 def build_profile_context(user):
     user_posts = Post.query.filter_by(user_id=user.id).order_by(Post.created_at.desc()).all()
     project_count = Post.query.filter_by(user_id=user.id, post_type='project').count()
-    followers_count = len(user.followers)
+    followers_count = user.followers.count()
 
     try:
         labs_count = ChallengeSubmission.query.filter_by(user_id=user.id, is_passed=True).count()
@@ -284,7 +284,6 @@ def build_profile_context(user):
 
     context.update(get_shop_stats())
     return context
-
 
 # ==========================================
 # User Loader
